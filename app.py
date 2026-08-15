@@ -1,4 +1,5 @@
 import io
+import html
 import re
 import time
 import zipfile
@@ -659,12 +660,373 @@ def is_award_result_related(obj: Scholarship) -> bool:
 
     return False
 
-st.set_page_config(page_title="南大獎助學金篩選器", page_icon="🎓", layout="wide")
-st.title("🎓 南大獎助學金自動篩選器")
-st.caption("自動抓取 NUTN 獎助學金公告 → 自動屏蔽碩博士論文類訊息 → 戶籍／科系／原住民／清寒／成績篩選 → 顯示相符度、難易度與剩餘天數")
+st.set_page_config(
+    page_title="南大獎助學金篩選器",
+    page_icon="🎓",
+    layout="wide",
+    initial_sidebar_state="auto",
+)
+
+st.markdown(
+    """
+    <style>
+    :root {
+        --page: #f5f5f7;
+        --surface: rgba(255, 255, 255, .82);
+        --surface-solid: #ffffff;
+        --surface-secondary: rgba(245, 245, 247, .82);
+        --text: #1d1d1f;
+        --secondary: #6e6e73;
+        --blue: #0071e3;
+        --green: #248a3d;
+        --amber: #a05a00;
+        --red: #d70015;
+        --border: rgba(0, 0, 0, .07);
+        --glass-border: rgba(255, 255, 255, .72);
+        --shadow: 0 4px 20px rgba(0, 0, 0, .04);
+        --ease: cubic-bezier(.25, 1, .5, 1);
+    }
+
+    html, body, [class*="css"], [data-testid="stAppViewContainer"] {
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter,
+            "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+        color: var(--text);
+    }
+
+    .stApp {
+        background:
+            radial-gradient(circle at 66% -5%, rgba(0, 113, 227, .075), transparent 30rem),
+            var(--page);
+    }
+
+    [data-testid="stHeader"] {
+        background: rgba(245, 245, 247, .72);
+        backdrop-filter: blur(20px) saturate(160%);
+        -webkit-backdrop-filter: blur(20px) saturate(160%);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .block-container {
+        max-width: 1360px;
+        padding-top: 4.5rem;
+        padding-bottom: 5rem;
+    }
+
+    section[data-testid="stSidebar"] {
+        background: rgba(255, 255, 255, .72);
+        backdrop-filter: blur(28px) saturate(170%);
+        -webkit-backdrop-filter: blur(28px) saturate(170%);
+        border-right: 1px solid var(--glass-border);
+    }
+
+    section[data-testid="stSidebar"] > div { padding-top: 1.4rem; }
+    section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: .85rem; }
+
+    .sidebar-kicker, .hero-kicker {
+        color: var(--blue);
+        font-size: .72rem;
+        font-weight: 600;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+    }
+
+    .sidebar-title {
+        margin: .3rem 0 .25rem;
+        font-size: 1.55rem;
+        font-weight: 600;
+        letter-spacing: -.035em;
+    }
+
+    .sidebar-copy {
+        margin: 0 0 1rem;
+        color: var(--secondary);
+        font-size: .87rem;
+        line-height: 1.55;
+    }
+
+    .hero {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        padding: clamp(2.2rem, 6vw, 5rem);
+        margin-bottom: 2.25rem;
+        border: 1px solid var(--glass-border);
+        border-radius: 32px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(24px) saturate(160%);
+        -webkit-backdrop-filter: blur(24px) saturate(160%);
+        animation: appleRise 340ms var(--ease) both;
+    }
+
+    .hero::after {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        width: 28rem;
+        height: 28rem;
+        right: -10rem;
+        top: -15rem;
+        border-radius: 50%;
+        background: rgba(0, 113, 227, .12);
+        filter: blur(70px);
+    }
+
+    .hero h1 {
+        max-width: 820px;
+        margin: .7rem 0 1rem;
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+        font-size: clamp(2.65rem, 5.2vw, 3.55rem);
+        font-weight: 600;
+        letter-spacing: -.055em;
+        line-height: 1.08;
+    }
+
+    .hero-copy {
+        max-width: 730px;
+        margin: 0;
+        color: var(--secondary);
+        font-size: clamp(1rem, 1.7vw, 1.16rem);
+        line-height: 1.75;
+    }
+
+    .hero-pills { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.75rem; }
+    .hero-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .5rem .75rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .62);
+        color: var(--secondary);
+        font-size: .78rem;
+        font-weight: 500;
+    }
+    .hero-pill i { color: var(--green); font-style: normal; }
+
+    .section-heading { margin: 2.75rem 0 1rem; }
+    .section-heading h2 {
+        margin: 0 0 .35rem;
+        font-size: clamp(1.55rem, 3vw, 1.9rem);
+        font-weight: 600;
+        letter-spacing: -.045em;
+    }
+    .section-heading p { margin: 0; color: var(--secondary); font-size: .94rem; }
+
+    div[data-testid="stAlert"] {
+        border: 1px solid rgba(0, 113, 227, .12);
+        border-radius: 18px;
+        background: rgba(0, 113, 227, .055);
+        color: var(--text);
+    }
+
+    div[data-baseweb="select"] > div,
+    div[data-testid="stTextInput"] input,
+    div[data-testid="stNumberInput"] input {
+        min-height: 2.75rem;
+        border-color: var(--border) !important;
+        border-radius: 14px !important;
+        background: rgba(255, 255, 255, .76) !important;
+        box-shadow: none !important;
+        transition: border-color 260ms var(--ease), box-shadow 260ms var(--ease);
+    }
+    div[data-baseweb="select"] > div:focus-within,
+    div[data-testid="stTextInput"] input:focus,
+    div[data-testid="stNumberInput"] input:focus {
+        border-color: rgba(0, 113, 227, .5) !important;
+        box-shadow: 0 0 0 3px rgba(0, 113, 227, .1) !important;
+    }
+
+    .stButton > button[kind="primary"] {
+        min-height: 3.1rem;
+        border: 0;
+        border-radius: 15px;
+        background: #1d1d1f;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 5px 18px rgba(0, 0, 0, .08);
+        transition: transform 260ms var(--ease), opacity 260ms var(--ease), box-shadow 260ms var(--ease);
+    }
+    .stButton > button[kind="primary"]:hover {
+        transform: scale(1.018);
+        background: #1d1d1f;
+        color: white;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, .1);
+    }
+    .stButton > button[kind="primary"]:active { transform: scale(.982); }
+
+    div[data-testid="stMetric"] {
+        min-height: 132px;
+        padding: 1.35rem 1.5rem;
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(20px) saturate(150%);
+        -webkit-backdrop-filter: blur(20px) saturate(150%);
+        transition: transform 300ms var(--ease), box-shadow 300ms var(--ease);
+        animation: appleRise 320ms var(--ease) both;
+    }
+    div[data-testid="stMetric"]:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,.055); }
+    div[data-testid="stMetricLabel"] { color: var(--secondary); font-size: .88rem; }
+    div[data-testid="stMetricValue"] { color: var(--text); font-size: 2.2rem; font-weight: 600; letter-spacing: -.045em; }
+
+    div[data-testid="stDataFrame"] {
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        background: var(--surface-solid);
+        box-shadow: var(--shadow);
+        animation: appleRise 340ms var(--ease) both;
+    }
+
+    .stDownloadButton > button, .stLinkButton > a {
+        min-height: 2.8rem;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--surface-solid);
+        color: var(--text);
+        font-weight: 500;
+        box-shadow: none;
+        transition: transform 260ms var(--ease), border-color 260ms var(--ease);
+    }
+    .stDownloadButton > button:hover, .stLinkButton > a:hover {
+        transform: translateY(-1px);
+        border-color: rgba(0, 113, 227, .25);
+        color: var(--blue);
+    }
+
+    div[data-testid="stExpander"] > details {
+        overflow: hidden;
+        margin-bottom: .8rem;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+        transition: transform 300ms var(--ease), box-shadow 300ms var(--ease);
+    }
+    div[data-testid="stExpander"] > details:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,.055); }
+    div[data-testid="stExpander"] > details > summary { padding: .6rem .75rem; font-weight: 500; }
+    div[data-testid="stExpander"] > details[open] > div {
+        animation: detailReveal 320ms var(--ease) both;
+    }
+
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: .7rem;
+        margin: .25rem 0 1rem;
+    }
+    .detail-cell {
+        min-height: 82px;
+        padding: .9rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 15px;
+        background: var(--surface-secondary);
+    }
+    .detail-label { color: var(--secondary); font-size: .72rem; font-weight: 500; }
+    .detail-value { margin-top: .3rem; color: var(--text); font-size: .9rem; font-weight: 500; line-height: 1.4; }
+    .decision-note {
+        margin: .3rem 0 1rem;
+        padding: .9rem 1rem;
+        border-left: 3px solid var(--blue);
+        border-radius: 4px 14px 14px 4px;
+        background: rgba(0, 113, 227, .055);
+        color: var(--secondary);
+        font-size: .88rem;
+        line-height: 1.55;
+    }
+    .decision-note strong { color: var(--text); font-weight: 600; }
+
+    div[data-testid="stProgress"] > div > div { border-radius: 999px; }
+
+    @keyframes appleRise {
+        from { opacity: 0; transform: translateY(10px) scale(.992); filter: blur(4px); }
+        to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+    @keyframes detailReveal {
+        from { opacity: 0; transform: translateY(5px) scale(.995); filter: blur(3px); }
+        to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+
+    @media (max-width: 760px) {
+        .block-container { padding-top: 2.5rem; padding-bottom: 3rem; }
+        .hero { padding: 2rem 1.35rem; border-radius: 26px; }
+        .hero h1 { font-size: 2.55rem; }
+        .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        div[data-testid="stMetric"] { min-height: 108px; padding: 1rem; }
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --page: #000000;
+            --surface: rgba(28, 28, 30, .84);
+            --surface-solid: #1c1c1e;
+            --surface-secondary: rgba(44, 44, 46, .72);
+            --text: #f5f5f7;
+            --secondary: #a1a1a6;
+            --blue: #2997ff;
+            --green: #30d158;
+            --amber: #ff9f0a;
+            --red: #ff453a;
+            --border: rgba(255, 255, 255, .09);
+            --glass-border: rgba(255, 255, 255, .1);
+            --shadow: 0 4px 20px rgba(0, 0, 0, .2);
+        }
+        [data-testid="stHeader"] { background: rgba(0, 0, 0, .72); }
+        section[data-testid="stSidebar"] { background: rgba(28, 28, 30, .8); }
+        .hero-pill { background: rgba(44, 44, 46, .72); }
+        div[data-baseweb="select"] > div,
+        div[data-testid="stTextInput"] input,
+        div[data-testid="stNumberInput"] input { background: rgba(44, 44, 46, .78) !important; color: var(--text) !important; }
+        .stButton > button[kind="primary"] { background: #f5f5f7; color: #1d1d1f; }
+        .stButton > button[kind="primary"]:hover { background: #ffffff; color: #1d1d1f; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            scroll-behavior: auto !important;
+            animation-duration: .01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: .01ms !important;
+        }
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
+    <section class="hero">
+        <div class="hero-kicker">NUTN Scholarship Intelligence</div>
+        <h1>找到真正適合你的獎學金。</h1>
+        <p class="hero-copy">
+            自動分析南大獎助學金公告，依戶籍、科系、身分、清寒、學業與操行條件篩選，
+            並整理相符度、申請難易度與距離截止日。
+        </p>
+        <div class="hero-pills">
+            <span class="hero-pill"><i>✓</i> 最近半年</span>
+            <span class="hero-pill"><i>✓</i> 過期自動隱藏</span>
+            <span class="hero-pill"><i>✓</i> 排除論文與得獎名單</span>
+            <span class="hero-pill"><i>✓</i> 附件解析</span>
+        </div>
+    </section>
+    """,
+    unsafe_allow_html=True,
+)
 
 with st.sidebar:
-    st.header("你的條件")
+    st.markdown(
+        """
+        <div class="sidebar-kicker">Personal Profile</div>
+        <div class="sidebar-title">你的申請條件</div>
+        <p class="sidebar-copy">填入基本條件，系統會優先排除明確不符合的公告。</p>
+        """,
+        unsafe_allow_html=True,
+    )
     user_residency = st.selectbox("戶籍地", ["新竹市","新竹縣","臺北市","新北市","桃園市","臺中市","臺南市","高雄市","基隆市","嘉義市","苗栗縣","彰化縣","南投縣","雲林縣","嘉義縣","屏東縣","宜蘭縣","花蓮縣","臺東縣","澎湖縣","金門縣","連江縣"])
     user_major = st.text_input("科系", value="資訊工程學系")
     is_indigenous = st.checkbox("我具有原住民／原住民族身分", value=False)
@@ -676,11 +1038,9 @@ with st.sidebar:
     only_current = st.checkbox("只顯示符合 + 可能符合", value=True)
     max_posts = st.number_input("最多掃描公告數（0 = 全部）", min_value=0, max_value=500, value=0, step=10)
 
-st.info(
-    "程式會把『無明確要求』視為不因該項成績淘汰；但若公告有戶籍、年級、科系、特定身分等限制，會另外標示，請最後再人工確認。"
-)
+st.info("「無明確要求」不會因該項成績淘汰；戶籍、年級、科系或特定身分限制仍會獨立標示，送件前請再人工確認。")
 
-if st.button("🔎 開始抓取並篩選", type="primary", use_container_width=True):
+if st.button("開始分析獎學金", type="primary", use_container_width=True):
     progress = st.progress(0, text="正在讀取公告列表…")
     try:
         listing = parse_listing()
@@ -749,40 +1109,90 @@ if results:
     df_show["_score_sort"] = pd.to_numeric(df_show["相符度"].astype(str).str.rstrip("%"), errors="coerce").fillna(0)
     df_show = df_show.sort_values(["_order", "_score_sort", "_days_sort"], ascending=[True, False, True]).drop(columns=["_order","_days_sort","_score_sort"])
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("✅ 符合", int((df_all["符合狀態"] == "符合").sum()))
-    c2.metric("⚠️ 可能符合", int((df_all["符合狀態"] == "可能符合（需確認）").sum()))
-    c3.metric("❌ 不符合", int((df_all["符合狀態"] == "不符合").sum()))
+    st.markdown(
+        """
+        <div class="section-heading">
+            <h2>資格概覽</h2>
+            <p>依目前條件完成分類，可能符合的公告仍建議開啟原文確認。</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    c1, c2, c3 = st.columns(3, gap="medium")
+    c1.metric("符合", int((df_all["符合狀態"] == "符合").sum()))
+    c2.metric("可能符合", int((df_all["符合狀態"] == "可能符合（需確認）").sum()))
+    c3.metric("不符合", int((df_all["符合狀態"] == "不符合").sum()))
 
-    st.subheader("篩選結果")
+    st.markdown(
+        f"""
+        <div class="section-heading">
+            <h2>篩選結果</h2>
+            <p>目前顯示 {len(df_show)} 則公告；重要資訊已依資格、相符度與期限排序。</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    column_config = {"網址": st.column_config.LinkColumn("網址", display_text="開啟公告")}
+    df_table = df_show.copy()
+    if hasattr(st.column_config, "ProgressColumn"):
+        df_table["相符度"] = pd.to_numeric(df_table["相符度"].astype(str).str.rstrip("%"), errors="coerce")
+        column_config["相符度"] = st.column_config.ProgressColumn(
+            "相符度", min_value=0, max_value=100, format="%d%%"
+        )
     st.dataframe(
-        df_show,
+        df_table,
         use_container_width=True,
         hide_index=True,
-        column_config={"網址": st.column_config.LinkColumn("網址", display_text="開啟公告")},
+        column_config=column_config,
     )
 
     st.download_button(
-        "⬇️ 匯出目前結果 CSV",
+        "匯出目前結果 CSV",
         data=csv_bytes(df_show),
         file_name=f"NUTN_獎助學金篩選_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
         mime="text/csv",
         use_container_width=True,
     )
 
-    st.subheader("逐篇查看抓到的內容")
+    st.markdown(
+        """
+        <div class="section-heading">
+            <h2>公告詳細資料</h2>
+            <p>展開卡片查看條件摘要、判斷理由與附件擷取內容。</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     matching_objs = [x for x in results if (not only_current or x.match != "不符合")]
     for x in matching_objs:
         with st.expander(f"{x.match}｜{x.title}"):
-            st.write(f"**相符度：** {x.match_score}%　｜　**剩餘天數：** {x.remaining_days if x.remaining_days is not None else '未辨識'}　｜　**難易度：** {x.difficulty}")
-            st.write(f"**戶籍限制：** {x.residency_requirement}")
-            st.write(f"**原住民限制：** {x.indigenous_requirement}")
-            st.write(f"**科系限制：** {x.major_requirement}")
-            st.write(f"**清寒/弱勢：** {x.poverty_status}")
-            st.write(f"**學業：** {x.academic_requirement}")
-            st.write(f"**操行：** {x.conduct_requirement}")
-            st.write(f"**其他限制：** {x.other_requirements}")
-            st.write(f"**判斷：** {x.match_reason}")
+            detail_items = [
+                ("相符度", f"{x.match_score}%"),
+                ("剩餘天數", x.remaining_days if x.remaining_days is not None else "未辨識"),
+                ("申請難易度", x.difficulty),
+                ("截止日期", x.deadline),
+                ("戶籍限制", x.residency_requirement),
+                ("原住民限制", x.indigenous_requirement),
+                ("科系限制", x.major_requirement),
+                ("清寒／弱勢", x.poverty_status),
+                ("學業門檻", x.academic_requirement),
+                ("操行門檻", x.conduct_requirement),
+                ("其他限制", x.other_requirements),
+                ("公告日期", x.posted_date or "未辨識"),
+            ]
+            detail_html = "".join(
+                '<div class="detail-cell">'
+                f'<div class="detail-label">{html.escape(str(label))}</div>'
+                f'<div class="detail-value">{html.escape(str(value))}</div>'
+                '</div>'
+                for label, value in detail_items
+            )
+            st.markdown(f'<div class="detail-grid">{detail_html}</div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="decision-note"><strong>判斷理由</strong><br>{html.escape(x.match_reason)}</div>',
+                unsafe_allow_html=True,
+            )
             st.link_button("開啟原公告", x.url)
             st.text_area("公告內文", x.detail, height=220, key=f"detail_{x.board_no}")
             if x.attachment_text:
