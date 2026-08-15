@@ -66,7 +66,9 @@ def clean_text(text: str) -> str:
 def fetch(url, timeout=60):
     for attempt in range(3):
         try:
-            r = SESSION.get(url, timeout=timeout)
+            skip_ssl_verify = "campus.nutn.edu.tw" in url
+            
+            r = SESSION.get(url, timeout=timeout,verify=not skip_ssl_verify)
             r.raise_for_status()
             return r
         except requests.exceptions.Timeout:
