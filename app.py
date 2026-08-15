@@ -700,29 +700,21 @@ st.markdown(
     }
 
     [data-testid="stHeader"] {
-        background: rgba(245, 245, 247, .72);
+        background: transparent;
         backdrop-filter: blur(20px) saturate(160%);
         -webkit-backdrop-filter: blur(20px) saturate(160%);
-        border-bottom: 1px solid var(--border);
+        border-bottom: 0;
     }
+
+    [data-testid="stDecoration"], [data-testid="stToolbar"], footer, #MainMenu { display: none !important; }
 
     .block-container {
-        max-width: 1360px;
-        padding-top: 4.5rem;
-        padding-bottom: 5rem;
+        max-width: 1200px;
+        padding-top: 3rem;
+        padding-bottom: 5.5rem;
     }
 
-    section[data-testid="stSidebar"] {
-        background: rgba(255, 255, 255, .72);
-        backdrop-filter: blur(28px) saturate(170%);
-        -webkit-backdrop-filter: blur(28px) saturate(170%);
-        border-right: 1px solid var(--glass-border);
-    }
-
-    section[data-testid="stSidebar"] > div { padding-top: 1.4rem; }
-    section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: .85rem; }
-
-    .sidebar-kicker, .hero-kicker {
+    .hero-kicker, .panel-kicker {
         color: var(--blue);
         font-size: .72rem;
         font-weight: 600;
@@ -730,32 +722,13 @@ st.markdown(
         text-transform: uppercase;
     }
 
-    .sidebar-title {
-        margin: .3rem 0 .25rem;
-        font-size: 1.55rem;
-        font-weight: 600;
-        letter-spacing: -.035em;
-    }
-
-    .sidebar-copy {
-        margin: 0 0 1rem;
-        color: var(--secondary);
-        font-size: .87rem;
-        line-height: 1.55;
-    }
-
     .hero {
         position: relative;
         isolation: isolate;
         overflow: hidden;
-        padding: clamp(2.2rem, 6vw, 5rem);
-        margin-bottom: 2.25rem;
-        border: 1px solid var(--glass-border);
-        border-radius: 32px;
-        background: var(--surface);
-        box-shadow: var(--shadow);
-        backdrop-filter: blur(24px) saturate(160%);
-        -webkit-backdrop-filter: blur(24px) saturate(160%);
+        padding: clamp(3.8rem, 9vw, 7rem) 1.5rem clamp(3rem, 7vw, 5.5rem);
+        margin-bottom: .5rem;
+        text-align: center;
         animation: appleRise 340ms var(--ease) both;
     }
 
@@ -765,16 +738,17 @@ st.markdown(
         z-index: -1;
         width: 28rem;
         height: 28rem;
-        right: -10rem;
-        top: -15rem;
+        left: 50%;
+        top: -18rem;
+        transform: translateX(-50%);
         border-radius: 50%;
-        background: rgba(0, 113, 227, .12);
-        filter: blur(70px);
+        background: rgba(0, 113, 227, .1);
+        filter: blur(90px);
     }
 
     .hero h1 {
         max-width: 820px;
-        margin: .7rem 0 1rem;
+        margin: .8rem auto 1.15rem;
         color: var(--text);
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
         font-size: clamp(2.65rem, 5.2vw, 3.55rem);
@@ -785,13 +759,13 @@ st.markdown(
 
     .hero-copy {
         max-width: 730px;
-        margin: 0;
+        margin: 0 auto;
         color: var(--secondary);
         font-size: clamp(1rem, 1.7vw, 1.16rem);
         line-height: 1.75;
     }
 
-    .hero-pills { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.75rem; }
+    .hero-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: .55rem; margin-top: 1.65rem; }
     .hero-pill {
         display: inline-flex;
         align-items: center;
@@ -814,6 +788,108 @@ st.markdown(
         letter-spacing: -.045em;
     }
     .section-heading p { margin: 0; color: var(--secondary); font-size: .94rem; }
+    .compact-heading { margin-top: 2.1rem; }
+
+    .filter-heading { margin: 2.4rem 0 1.1rem; }
+    .filter-heading h2 {
+        margin: .45rem 0 .35rem;
+        color: var(--text);
+        font-size: clamp(1.65rem, 3vw, 2.1rem);
+        font-weight: 600;
+        letter-spacing: -.045em;
+    }
+    .filter-heading p { margin: 0; color: var(--secondary); font-size: .94rem; }
+
+    div[data-testid="stForm"] {
+        padding: clamp(1.2rem, 3vw, 2rem);
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        background: var(--surface-solid);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, .04);
+        animation: appleRise 300ms var(--ease) both;
+    }
+    div[data-testid="stForm"] [data-testid="stVerticalBlock"] { gap: 1.05rem; }
+    div[data-testid="stForm"] label p {
+        color: var(--secondary);
+        font-size: .78rem;
+        font-weight: 500;
+        letter-spacing: .005em;
+    }
+
+    div[data-testid="stForm"] [data-testid="stCheckbox"] label {
+        width: 100%;
+        min-height: 2.65rem;
+        padding: .55rem .8rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface-secondary);
+        transition: transform 250ms var(--ease), border-color 250ms var(--ease), background 250ms var(--ease);
+    }
+    div[data-testid="stForm"] [data-testid="stCheckbox"] label:hover {
+        transform: translateY(-1px);
+        border-color: rgba(0, 113, 227, .24);
+    }
+    div[data-testid="stForm"] [data-testid="stCheckbox"] label:has(input:checked) {
+        border-color: rgba(0, 113, 227, .22);
+        background: rgba(0, 113, 227, .07);
+    }
+    div[data-testid="stForm"] [data-testid="stCheckbox"] label[data-selected="true"] > div:first-of-type {
+        border-color: var(--blue) !important;
+        background: var(--blue) !important;
+    }
+    div[data-testid="stForm"] div[role="radiogroup"] {
+        display: inline-flex;
+        width: 100%;
+        gap: .25rem;
+        padding: .25rem;
+        border-radius: 999px;
+        background: var(--surface-secondary);
+    }
+    div[data-testid="stForm"] div[role="radiogroup"] label {
+        flex: 1;
+        justify-content: center;
+        min-height: 2.45rem;
+        margin: 0;
+        padding: .48rem .7rem;
+        border-radius: 999px;
+        transition: background 250ms var(--ease), box-shadow 250ms var(--ease);
+    }
+    div[data-testid="stForm"] div[role="radiogroup"] label:has(input:checked) {
+        background: var(--surface-solid);
+        box-shadow: 0 1px 6px rgba(0, 0, 0, .07);
+    }
+    div[data-testid="stForm"] [data-testid="stRadioOption"] > div > div > div:first-child {
+        display: none;
+    }
+
+    div[data-testid="stForm"] div[data-testid="stExpander"] > details {
+        margin: .15rem 0 .25rem;
+        border: 0;
+        border-radius: 16px;
+        background: var(--surface-secondary);
+        box-shadow: none;
+    }
+    div[data-testid="stForm"] div[data-testid="stExpander"] > details:hover {
+        transform: none;
+        box-shadow: none;
+    }
+    div[data-testid="stForm"] div[data-testid="stExpander"] > details > summary {
+        padding: .35rem .55rem;
+        color: var(--secondary);
+        font-size: .83rem;
+        font-weight: 500;
+    }
+
+    .trust-note {
+        display: flex;
+        align-items: flex-start;
+        gap: .55rem;
+        margin: 1rem .35rem 0;
+        color: var(--secondary);
+        font-size: .78rem;
+        line-height: 1.55;
+    }
+    .trust-note i { color: var(--blue); font-style: normal; font-weight: 600; }
 
     div[data-testid="stAlert"] {
         border: 1px solid rgba(0, 113, 227, .12);
@@ -825,10 +901,10 @@ st.markdown(
     div[data-baseweb="select"] > div,
     div[data-testid="stTextInput"] input,
     div[data-testid="stNumberInput"] input {
-        min-height: 2.75rem;
+        min-height: 3rem;
         border-color: var(--border) !important;
-        border-radius: 14px !important;
-        background: rgba(255, 255, 255, .76) !important;
+        border-radius: 999px !important;
+        background: var(--surface-secondary) !important;
         box-shadow: none !important;
         transition: border-color 260ms var(--ease), box-shadow 260ms var(--ease);
     }
@@ -839,39 +915,112 @@ st.markdown(
         box-shadow: 0 0 0 3px rgba(0, 113, 227, .1) !important;
     }
 
-    .stButton > button[kind="primary"] {
+    .stButton > button[kind="primary"], .stFormSubmitButton > button[kind="primaryFormSubmit"] {
         min-height: 3.1rem;
         border: 0;
         border-radius: 15px;
-        background: #1d1d1f;
+        background: var(--blue);
         color: white;
         font-weight: 600;
-        box-shadow: 0 5px 18px rgba(0, 0, 0, .08);
+        box-shadow: 0 6px 18px rgba(0, 113, 227, .16);
         transition: transform 260ms var(--ease), opacity 260ms var(--ease), box-shadow 260ms var(--ease);
     }
-    .stButton > button[kind="primary"]:hover {
+    .stButton > button[kind="primary"]:hover, .stFormSubmitButton > button[kind="primaryFormSubmit"]:hover {
         transform: scale(1.018);
-        background: #1d1d1f;
+        background: #0077ed;
         color: white;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, .1);
+        box-shadow: 0 9px 24px rgba(0, 113, 227, .2);
     }
-    .stButton > button[kind="primary"]:active { transform: scale(.982); }
+    .stButton > button[kind="primary"]:active, .stFormSubmitButton > button[kind="primaryFormSubmit"]:active { transform: scale(.982); }
 
-    div[data-testid="stMetric"] {
-        min-height: 132px;
-        padding: 1.35rem 1.5rem;
+    .summary-strip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        overflow: hidden;
         border: 1px solid var(--border);
         border-radius: 24px;
-        background: var(--surface);
-        box-shadow: var(--shadow);
-        backdrop-filter: blur(20px) saturate(150%);
-        -webkit-backdrop-filter: blur(20px) saturate(150%);
-        transition: transform 300ms var(--ease), box-shadow 300ms var(--ease);
-        animation: appleRise 320ms var(--ease) both;
+        background: var(--surface-solid);
+        box-shadow: 0 4px 24px rgba(0,0,0,.04);
+        animation: appleRise 250ms var(--ease) both;
     }
-    div[data-testid="stMetric"]:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,.055); }
-    div[data-testid="stMetricLabel"] { color: var(--secondary); font-size: .88rem; }
-    div[data-testid="stMetricValue"] { color: var(--text); font-size: 2.2rem; font-weight: 600; letter-spacing: -.045em; }
+    .summary-item { padding: 1.35rem 1.5rem; text-align: center; }
+    .summary-item + .summary-item { border-left: 1px solid var(--border); }
+    .summary-value { color: var(--text); font-size: 2rem; font-weight: 600; letter-spacing: -.045em; }
+    .summary-label { margin-top: .2rem; color: var(--secondary); font-size: .78rem; font-weight: 500; }
+    .summary-dot { display: inline-block; width: 6px; height: 6px; margin-right: .38rem; border-radius: 50%; background: var(--green); vertical-align: middle; }
+    .summary-dot.maybe { background: var(--amber); }
+    .summary-dot.no { background: var(--red); }
+
+    .scholarship-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 305px), 1fr));
+        gap: 1rem;
+        margin: 1rem 0 2.4rem;
+    }
+    .scholarship-card {
+        position: relative;
+        display: flex;
+        min-height: 260px;
+        flex-direction: column;
+        padding: 1.45rem;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--surface-solid);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, .04);
+        transition: transform 250ms var(--ease), box-shadow 250ms var(--ease), border-color 250ms var(--ease);
+        animation: appleRise 250ms var(--ease) both;
+    }
+    .scholarship-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(0, 113, 227, .14);
+        box-shadow: 0 10px 32px rgba(0, 0, 0, .065);
+    }
+    .card-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: .38rem .65rem;
+        border-radius: 999px;
+        background: rgba(36, 138, 61, .08);
+        color: var(--green);
+        font-size: .73rem;
+        font-weight: 600;
+    }
+    .status-pill.maybe { background: rgba(160, 90, 0, .08); color: var(--amber); }
+    .status-pill.no { background: rgba(215, 0, 21, .07); color: var(--red); }
+    .card-score { color: var(--text); font-size: 1.65rem; font-weight: 600; letter-spacing: -.04em; }
+    .card-score small { color: var(--secondary); font-size: .7rem; font-weight: 500; letter-spacing: 0; }
+    .scholarship-card h3 {
+        margin: 1.2rem 0 .7rem;
+        color: var(--text);
+        font-size: 1.18rem;
+        font-weight: 600;
+        letter-spacing: -.025em;
+        line-height: 1.42;
+    }
+    .card-meta { color: var(--secondary); font-size: .82rem; line-height: 1.55; }
+    .card-tags { display: flex; flex-wrap: wrap; gap: .42rem; margin: 1rem 0; }
+    .card-tag {
+        max-width: 100%;
+        padding: .34rem .55rem;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--surface-secondary);
+        color: var(--secondary);
+        font-size: .7rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .card-link {
+        align-self: flex-start;
+        margin-top: auto;
+        color: var(--blue) !important;
+        font-size: .82rem;
+        font-weight: 500;
+        text-decoration: none !important;
+    }
+    .card-link:hover { text-decoration: underline !important; }
 
     div[data-testid="stDataFrame"] {
         overflow: hidden;
@@ -952,11 +1101,14 @@ st.markdown(
     }
 
     @media (max-width: 760px) {
-        .block-container { padding-top: 2.5rem; padding-bottom: 3rem; }
+        .block-container { padding: 1.25rem 1rem 3rem; }
         .hero { padding: 2rem 1.35rem; border-radius: 26px; }
         .hero h1 { font-size: 2.55rem; }
         .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        div[data-testid="stMetric"] { min-height: 108px; padding: 1rem; }
+        div[data-testid="stForm"] { border-radius: 22px; }
+        .scholarship-card { min-height: 230px; }
+        .summary-item { padding: 1rem .45rem; }
+        .summary-value { font-size: 1.65rem; }
     }
 
     @media (prefers-color-scheme: dark) {
@@ -975,14 +1127,13 @@ st.markdown(
             --glass-border: rgba(255, 255, 255, .1);
             --shadow: 0 4px 20px rgba(0, 0, 0, .2);
         }
-        [data-testid="stHeader"] { background: rgba(0, 0, 0, .72); }
-        section[data-testid="stSidebar"] { background: rgba(28, 28, 30, .8); }
+        [data-testid="stHeader"] { background: transparent; }
         .hero-pill { background: rgba(44, 44, 46, .72); }
         div[data-baseweb="select"] > div,
         div[data-testid="stTextInput"] input,
         div[data-testid="stNumberInput"] input { background: rgba(44, 44, 46, .78) !important; color: var(--text) !important; }
-        .stButton > button[kind="primary"] { background: #f5f5f7; color: #1d1d1f; }
-        .stButton > button[kind="primary"]:hover { background: #ffffff; color: #1d1d1f; }
+        .stButton > button[kind="primary"], .stFormSubmitButton > button[kind="primaryFormSubmit"] { background: var(--blue); color: #ffffff; }
+        .stButton > button[kind="primary"]:hover, .stFormSubmitButton > button[kind="primaryFormSubmit"]:hover { background: #409cff; color: #ffffff; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1018,29 +1169,61 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-with st.sidebar:
-    st.markdown(
-        """
-        <div class="sidebar-kicker">Personal Profile</div>
-        <div class="sidebar-title">你的申請條件</div>
-        <p class="sidebar-copy">填入基本條件，系統會優先排除明確不符合的公告。</p>
-        """,
-        unsafe_allow_html=True,
-    )
-    user_residency = st.selectbox("戶籍地", ["新竹市","新竹縣","臺北市","新北市","桃園市","臺中市","臺南市","高雄市","基隆市","嘉義市","苗栗縣","彰化縣","南投縣","雲林縣","嘉義縣","屏東縣","宜蘭縣","花蓮縣","臺東縣","澎湖縣","金門縣","連江縣"])
-    user_major = st.text_input("科系", value="資訊工程學系")
-    is_indigenous = st.checkbox("我具有原住民／原住民族身分", value=False)
-    user_academic = st.number_input("學業平均成績", min_value=0.0, max_value=100.0, value=80.0, step=1.0)
-    user_conduct = st.number_input("操行成績", min_value=0.0, max_value=100.0, value=85.0, step=1.0)
-    has_poverty_proof = st.checkbox("我有清寒／低收／中低收等相關證明", value=False)
-    uncertain_ok = st.checkbox("清寒資格寫得不清楚時，先保留讓我人工確認", value=True)
-    include_attachments = st.checkbox("讀取 PDF / DOCX / ODT 附件（較完整但較慢）", value=True)
-    only_current = st.checkbox("只顯示符合 + 可能符合", value=True)
-    max_posts = st.number_input("最多掃描公告數（0 = 全部）", min_value=0, max_value=500, value=0, step=10)
+st.markdown(
+    """
+    <div class="filter-heading">
+        <div class="panel-kicker">Eligibility Profile</div>
+        <h2>設定你的申請條件</h2>
+        <p>一次填妥條件後再分析，避免輸入過程反覆重新整理。</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
-st.info("「無明確要求」不會因該項成績淘汰；戶籍、年級、科系或特定身分限制仍會獨立標示，送件前請再人工確認。")
+with st.form("eligibility_profile"):
+    profile_col1, profile_col2 = st.columns([1, 1.45], gap="medium")
+    with profile_col1:
+        user_residency = st.selectbox(
+            "戶籍地",
+            ["新竹市","新竹縣","臺北市","新北市","桃園市","臺中市","臺南市","高雄市","基隆市","嘉義市","苗栗縣","彰化縣","南投縣","雲林縣","嘉義縣","屏東縣","宜蘭縣","花蓮縣","臺東縣","澎湖縣","金門縣","連江縣"],
+        )
+    with profile_col2:
+        user_major = st.text_input("科系關鍵字", value="資訊工程學系", placeholder="例如：資訊工程學系")
 
-if st.button("開始分析獎學金", type="primary", use_container_width=True):
+    score_col1, score_col2 = st.columns(2, gap="medium")
+    with score_col1:
+        user_academic = st.number_input("學業平均成績", min_value=0.0, max_value=100.0, value=80.0, step=1.0)
+    with score_col2:
+        user_conduct = st.number_input("操行成績", min_value=0.0, max_value=100.0, value=85.0, step=1.0)
+
+    with st.expander("更多篩選與執行設定"):
+        identity_col1, identity_col2, identity_col3 = st.columns(3, gap="medium")
+        with identity_col1:
+            is_indigenous = st.checkbox("原住民／原住民族身分", value=False)
+        with identity_col2:
+            has_poverty_proof = st.checkbox("具清寒／低收等證明", value=False)
+        with identity_col3:
+            uncertain_ok = st.checkbox("資格不明時保留確認", value=True)
+
+        option_col1, option_col2, option_col3 = st.columns(3, gap="medium")
+        with option_col1:
+            max_posts = st.number_input("掃描公告數（0 為全部）", min_value=0, max_value=500, value=0, step=10)
+        with option_col2:
+            include_attachments = st.checkbox("解析公告附件", value=True)
+        with option_col3:
+            result_scope = st.radio("結果顯示", ["推薦結果", "全部公告"], horizontal=True)
+            only_current = result_scope == "推薦結果"
+
+    submitted = st.form_submit_button("開始分析獎學金", type="primary", width="stretch")
+
+st.markdown(
+    """
+    <div class="trust-note"><i>ⓘ</i><span>「無明確要求」不會造成淘汰；送件前仍請開啟原公告確認完整資格。</span></div>
+    """,
+    unsafe_allow_html=True,
+)
+
+if submitted:
     progress = st.progress(0, text="正在讀取公告列表…")
     try:
         listing = parse_listing()
@@ -1118,16 +1301,61 @@ if results:
         """,
         unsafe_allow_html=True,
     )
-    c1, c2, c3 = st.columns(3, gap="medium")
-    c1.metric("符合", int((df_all["符合狀態"] == "符合").sum()))
-    c2.metric("可能符合", int((df_all["符合狀態"] == "可能符合（需確認）").sum()))
-    c3.metric("不符合", int((df_all["符合狀態"] == "不符合").sum()))
+    fit_count = int((df_all["符合狀態"] == "符合").sum())
+    maybe_count = int((df_all["符合狀態"] == "可能符合（需確認）").sum())
+    no_count = int((df_all["符合狀態"] == "不符合").sum())
+    st.markdown(
+        f"""
+        <div class="summary-strip">
+            <div class="summary-item"><div class="summary-value">{fit_count}</div><div class="summary-label"><i class="summary-dot"></i>符合</div></div>
+            <div class="summary-item"><div class="summary-value">{maybe_count}</div><div class="summary-label"><i class="summary-dot maybe"></i>可能符合</div></div>
+            <div class="summary-item"><div class="summary-value">{no_count}</div><div class="summary-label"><i class="summary-dot no"></i>不符合</div></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     st.markdown(
         f"""
         <div class="section-heading">
             <h2>篩選結果</h2>
-            <p>目前顯示 {len(df_show)} 則公告；重要資訊已依資格、相符度與期限排序。</p>
+            <p>目前顯示 {len(df_show)} 則公告；先用卡片快速掃讀，再到完整表格比較所有條件。</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    objects_by_url = {x.url: x for x in results}
+    card_objects = [objects_by_url[url] for url in df_show["網址"].tolist() if url in objects_by_url]
+    cards = []
+    for x in card_objects:
+        status_class = "maybe" if x.match.startswith("可能符合") else ("no" if x.match == "不符合" else "")
+        days_text = f"剩餘 {x.remaining_days} 天" if x.remaining_days is not None else "剩餘天數未辨識"
+        tags = [x.residency_requirement, x.major_requirement, x.poverty_status]
+        tags = [tag for tag in tags if tag and tag not in ("未偵測", "未提及")][:3]
+        if not tags:
+            tags = ["無明確額外限制"]
+        tags_html = "".join(f'<span class="card-tag">{html.escape(str(tag))}</span>' for tag in tags)
+        cards.append(
+            '<article class="scholarship-card">'
+            '<div class="card-top">'
+            f'<span class="status-pill {status_class}">{html.escape(x.match)}</span>'
+            f'<span class="card-score">{x.match_score}<small>% 相符</small></span>'
+            '</div>'
+            f'<h3>{html.escape(x.title)}</h3>'
+            f'<div class="card-meta">截止 {html.escape(x.deadline)} · {html.escape(days_text)} · {html.escape(x.difficulty)}</div>'
+            f'<div class="card-tags">{tags_html}</div>'
+            f'<a class="card-link" href="{html.escape(x.url, quote=True)}" target="_blank" rel="noopener noreferrer">查看原公告 ↗</a>'
+            '</article>'
+        )
+    if cards:
+        st.markdown(f'<div class="scholarship-grid">{"".join(cards)}</div>', unsafe_allow_html=True)
+
+    st.markdown(
+        """
+        <div class="section-heading compact-heading">
+            <h2>完整條件比較</h2>
+            <p>可搜尋、排序、調整欄位或切換全螢幕檢視。</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -1142,7 +1370,7 @@ if results:
         )
     st.dataframe(
         df_table,
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
         column_config=column_config,
     )
@@ -1152,7 +1380,7 @@ if results:
         data=csv_bytes(df_show),
         file_name=f"NUTN_獎助學金篩選_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
         mime="text/csv",
-        use_container_width=True,
+        width="stretch",
     )
 
     st.markdown(
