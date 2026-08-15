@@ -55,6 +55,7 @@ class Scholarship:
     remaining_days: int | None = None
     match_score: int = 0
     difficulty: str = "未評估"
+    amount: str = "金額未辨識"
 
 
 def clean_text(text: str) -> str:
@@ -143,6 +144,49 @@ def extract_deadline(title: str, detail: str) -> str:
     if "隨時" in text:
         return "隨時"
     return "未辨識"
+
+
+def extract_amount(text: str) -> str:
+    """只在獎助語境附近擷取金額，降低把日期或成績誤判為金額的機率。"""
+    context = r"(?:獎助學金|獎學金|獎助金|補助金|獎勵金|每名|每人|金額)"
+    currency = r"(?:新臺幣|台幣|NT\$|NTD)?\s*"
+    number = r"([0-9][0-9,]*(?:\.[0-9]+)?)\s*(萬)?\s*元"
+    patterns = [
+        rf"{context}.{{0,28}}?{currency}{number}",
+        rf"{currency}{number}.{{0,18}}?{context}",
+    ]
+    values = set()
+    range_pattern = (
+        rf"{context}.{{0,28}}?{currency}([0-9][0-9,]*(?:\.[0-9]+)?)\s*(萬)?\s*元"
+        rf"\s*(?:至|到|～|~|-|–)\s*{currency}([0-9][0-9,]*(?:\.[0-9]+)?)\s*(萬)?\s*元"
+    )
+
+    def add_value(raw: str, ten_thousand: str | None):
+        try:
+            value = float(raw.replace(",", ""))
+            if ten_thousand:
+                value *= 10000
+            rounded = int(round(value))
+            if 1000 <= rounded <= 10_000_000:
+                values.add(rounded)
+        except (TypeError, ValueError):
+            pass
+
+    normalized = clean_text(text)
+    for match in re.finditer(range_pattern, normalized, re.I | re.S):
+        add_value(match.group(1), match.group(2))
+        add_value(match.group(3), match.group(4))
+
+    for pattern in patterns:
+        for match in re.finditer(pattern, normalized, re.I | re.S):
+            add_value(match.group(1), match.group(2))
+
+    if not values:
+        return "金額未辨識"
+    ordered = sorted(values)
+    if len(ordered) == 1:
+        return f"NT$ {ordered[0]:,}"
+    return f"NT$ {ordered[0]:,}–{ordered[-1]:,}"
 
 
 def extract_pdf_text(content: bytes) -> str:
@@ -327,6 +371,7 @@ def extract_other_requirements(text: str) -> str:
 def analyze_requirements(obj: Scholarship):
     text = clean_text(obj.title + "\n" + obj.detail + "\n" + obj.attachment_text)
     obj.poverty_status = poverty_classification(text)
+    obj.amount = extract_amount(text)
 
     academic = find_scores(text, "academic")
     conduct = find_scores(text, "conduct")
@@ -552,6 +597,7 @@ def to_display_df(items: list[Scholarship]) -> pd.DataFrame:
     for x in items:
         rows.append({
             "符合狀態": x.match,
+            "獎助金額": x.amount,
             "相符度": f"{x.match_score}%",
             "剩餘天數": x.remaining_days if x.remaining_days is not None else "未辨識",
             "難易度": x.difficulty,
@@ -722,6 +768,21 @@ st.markdown(
         text-transform: uppercase;
     }
 
+    .site-nav {
+        display: flex;
+        align-items: center;
+        gap: .7rem;
+        min-height: 44px;
+        padding: 0 .25rem .7rem;
+        border-bottom: 1px solid var(--border);
+        color: var(--secondary);
+        font-size: .78rem;
+        font-weight: 500;
+    }
+    .brand-mark { color: var(--text); font-size: .9rem; font-weight: 600; letter-spacing: -.02em; }
+    .nav-divider { width: 1px; height: 13px; background: var(--border); }
+    .nav-status { margin-left: auto; color: var(--secondary); font-size: .7rem; }
+
     .hero {
         position: relative;
         isolation: isolate;
@@ -814,6 +875,13 @@ st.markdown(
         font-size: .78rem;
         font-weight: 500;
         letter-spacing: .005em;
+    }
+    .field-section-label {
+        margin: .15rem 0 -.35rem;
+        color: var(--secondary);
+        font-size: .72rem;
+        font-weight: 500;
+        letter-spacing: .02em;
     }
 
     div[data-testid="stForm"] [data-testid="stCheckbox"] label {
@@ -991,6 +1059,15 @@ st.markdown(
     .status-pill.no { background: rgba(215, 0, 21, .07); color: var(--red); }
     .card-score { color: var(--text); font-size: 1.65rem; font-weight: 600; letter-spacing: -.04em; }
     .card-score small { color: var(--secondary); font-size: .7rem; font-weight: 500; letter-spacing: 0; }
+    .card-amount {
+        margin-top: 1.1rem;
+        color: var(--text);
+        font-size: clamp(1.7rem, 3vw, 2.25rem);
+        font-weight: 600;
+        letter-spacing: -.045em;
+        line-height: 1.05;
+    }
+    .card-amount.unknown { color: var(--secondary); font-size: 1rem; font-weight: 500; letter-spacing: -.01em; }
     .scholarship-card h3 {
         margin: 1.2rem 0 .7rem;
         color: var(--text);
@@ -1109,6 +1186,7 @@ st.markdown(
         .scholarship-card { min-height: 230px; }
         .summary-item { padding: 1rem .45rem; }
         .summary-value { font-size: 1.65rem; }
+        .nav-status { display: none; }
     }
 
     @media (prefers-color-scheme: dark) {
@@ -1151,6 +1229,12 @@ st.markdown(
 
 st.markdown(
     """
+    <nav class="site-nav" aria-label="頁面導覽">
+        <span class="brand-mark">NUTN</span>
+        <span class="nav-divider"></span>
+        <span>Scholarship Finder</span>
+        <span class="nav-status">資料來源 · 國立臺南大學獎助學金公告</span>
+    </nav>
     <section class="hero">
         <div class="hero-kicker">NUTN Scholarship Intelligence</div>
         <h1>找到真正適合你的獎學金。</h1>
@@ -1196,15 +1280,16 @@ with st.form("eligibility_profile"):
     with score_col2:
         user_conduct = st.number_input("操行成績", min_value=0.0, max_value=100.0, value=85.0, step=1.0)
 
-    with st.expander("更多篩選與執行設定"):
-        identity_col1, identity_col2, identity_col3 = st.columns(3, gap="medium")
-        with identity_col1:
-            is_indigenous = st.checkbox("原住民／原住民族身分", value=False)
-        with identity_col2:
-            has_poverty_proof = st.checkbox("具清寒／低收等證明", value=False)
-        with identity_col3:
-            uncertain_ok = st.checkbox("資格不明時保留確認", value=True)
+    st.markdown('<div class="field-section-label">快速條件</div>', unsafe_allow_html=True)
+    identity_col1, identity_col2, identity_col3 = st.columns(3, gap="medium")
+    with identity_col1:
+        is_indigenous = st.checkbox("原住民／原住民族身分", value=False)
+    with identity_col2:
+        has_poverty_proof = st.checkbox("具清寒／低收等證明", value=False)
+    with identity_col3:
+        uncertain_ok = st.checkbox("資格不明時保留確認", value=True)
 
+    with st.expander("更多篩選與執行設定"):
         option_col1, option_col2, option_col3 = st.columns(3, gap="medium")
         with option_col1:
             max_posts = st.number_input("掃描公告數（0 為全部）", min_value=0, max_value=500, value=0, step=10)
@@ -1330,6 +1415,7 @@ if results:
     cards = []
     for x in card_objects:
         status_class = "maybe" if x.match.startswith("可能符合") else ("no" if x.match == "不符合" else "")
+        amount_class = "unknown" if x.amount == "金額未辨識" else ""
         days_text = f"剩餘 {x.remaining_days} 天" if x.remaining_days is not None else "剩餘天數未辨識"
         tags = [x.residency_requirement, x.major_requirement, x.poverty_status]
         tags = [tag for tag in tags if tag and tag not in ("未偵測", "未提及")][:3]
@@ -1342,6 +1428,7 @@ if results:
             f'<span class="status-pill {status_class}">{html.escape(x.match)}</span>'
             f'<span class="card-score">{x.match_score}<small>% 相符</small></span>'
             '</div>'
+            f'<div class="card-amount {amount_class}">{html.escape(x.amount)}</div>'
             f'<h3>{html.escape(x.title)}</h3>'
             f'<div class="card-meta">截止 {html.escape(x.deadline)} · {html.escape(days_text)} · {html.escape(x.difficulty)}</div>'
             f'<div class="card-tags">{tags_html}</div>'
@@ -1396,6 +1483,7 @@ if results:
     for x in matching_objs:
         with st.expander(f"{x.match}｜{x.title}"):
             detail_items = [
+                ("獎助金額", x.amount),
                 ("相符度", f"{x.match_score}%"),
                 ("剩餘天數", x.remaining_days if x.remaining_days is not None else "未辨識"),
                 ("申請難易度", x.difficulty),
