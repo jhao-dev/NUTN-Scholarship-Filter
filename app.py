@@ -1062,19 +1062,19 @@ st.markdown(
     .card-amount {
         margin-top: 1.1rem;
         color: var(--text);
-        font-size: clamp(1.7rem, 3vw, 2.25rem);
-        font-weight: 600;
-        letter-spacing: -.045em;
+        font-size: clamp(2.1rem, 3.6vw, 2.75rem);
+        font-weight: 650;
+        letter-spacing: -.055em;
         line-height: 1.05;
     }
     .card-amount.unknown { color: var(--secondary); font-size: 1rem; font-weight: 500; letter-spacing: -.01em; }
     .scholarship-card h3 {
-        margin: 1.2rem 0 .7rem;
+        margin: 1rem 0 .7rem;
         color: var(--text);
-        font-size: 1.18rem;
-        font-weight: 600;
-        letter-spacing: -.025em;
-        line-height: 1.42;
+        font-size: 1.04rem;
+        font-weight: 500;
+        letter-spacing: -.018em;
+        line-height: 1.48;
     }
     .card-meta { color: var(--secondary); font-size: .82rem; line-height: 1.55; }
     .card-tags { display: flex; flex-wrap: wrap; gap: .42rem; margin: 1rem 0; }
@@ -1126,15 +1126,38 @@ st.markdown(
 
     div[data-testid="stExpander"] > details {
         overflow: hidden;
-        margin-bottom: .8rem;
-        border: 1px solid var(--border);
-        border-radius: 20px;
-        background: var(--surface);
-        box-shadow: var(--shadow);
-        transition: transform 300ms var(--ease), box-shadow 300ms var(--ease);
+        margin-bottom: 0;
+        border: 0;
+        border-bottom: 1px solid var(--border);
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        transition: background 250ms var(--ease);
     }
-    div[data-testid="stExpander"] > details:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,.055); }
-    div[data-testid="stExpander"] > details > summary { padding: .6rem .75rem; font-weight: 500; }
+    div[data-testid="stExpander"] > details:hover { transform: none; background: rgba(255,255,255,.42); box-shadow: none; }
+    div[data-testid="stExpander"] > details > summary {
+        position: relative;
+        min-height: 62px;
+        padding: .75rem 2.8rem .75rem .35rem;
+        color: var(--text);
+        font-size: .92rem;
+        font-weight: 500;
+    }
+    div[data-testid="stExpander"] > details > summary::after {
+        content: "›";
+        position: absolute;
+        right: .65rem;
+        top: 50%;
+        color: var(--secondary);
+        font-size: 1.35rem;
+        font-weight: 400;
+        transform: translateY(-50%);
+        transition: transform 250ms var(--ease);
+    }
+    div[data-testid="stExpander"] > details[open] > summary::after {
+        transform: translateY(-50%) rotate(90deg);
+    }
+    div[data-testid="stExpander"] > details > summary [data-testid="stIconMaterial"] { display: none; }
     div[data-testid="stExpander"] > details[open] > div {
         animation: detailReveal 320ms var(--ease) both;
     }
