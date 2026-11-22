@@ -7,6 +7,7 @@
 用法：python scraper/scrape.py [app.py 路徑] [輸出 json 路徑]
 """
 import copy
+import re
 import json
 import sys
 import time
@@ -47,6 +48,38 @@ FIELDS = [
 DETAIL_MAX, ATT_MAX = 8000, 15000
 
 
+# 只是通知、說明會、宣布截止（沒有可申請內容）的公告，不放進清單
+NOTICE_TITLE = [
+    r"結果通知", r"查核結果", r"說明會", r"快訊", r"今日截止", r"已截止", r"截止通知",
+    r"就學貸款", r"重要通知$", r"停止(?:受理|申請)", r"取消(?:申請|受理)",
+]
+
+
+def is_notice_only(obj):
+    title = obj.title or ""
+    return any(re.search(p, title) for p in NOTICE_TITLE)
+
+
+# app.py 的戶籍偵測只認得「高雄市」這種全名；公告常寫「設籍高雄」，這裡補上簡稱
+_SHORT = {
+    "新北": ["新北市"], "臺北": ["臺北市"], "台北": ["臺北市"], "桃園": ["桃園市"],
+    "臺中": ["臺中市"], "台中": ["臺中市"], "臺南": ["臺南市"], "台南": ["臺南市"],
+    "高雄": ["高雄市"], "基隆": ["基隆市"], "新竹": ["新竹市", "新竹縣"], "嘉義": ["嘉義市", "嘉義縣"],
+}
+
+
+def add_short_residency(obj):
+    text = (obj.detail or "") + "\n" + (obj.attachment_text or "")
+    found = [] if obj.residency_requirement == "未偵測" else obj.residency_requirement.split("、")
+    for short, fulls in _SHORT.items():
+        if re.search(rf"(?:設籍|戶籍|籍設)[^。\n]{{0,12}}{short}|{short}[^。\n]{{0,6}}(?:設籍|戶籍)", text):
+            for f in fulls:
+                if f not in found:
+                    found.append(f)
+    if found:
+        obj.residency_requirement = "、".join(found)
+
+
 def pick(obj):
     return {k: getattr(obj, k) for k in FIELDS}
 
@@ -61,12 +94,13 @@ def main():
         label = item.get("title") or item["board_no"]
         try:
             obj = parse_detail(item, include_attachments=True)
-            if is_thesis_related(obj) or is_award_result_related(obj):
+            if is_thesis_related(obj) or is_award_result_related(obj) or is_notice_only(obj):
                 continue
             posted = parse_posted_date(obj.posted_date)
             if posted and posted < now - timedelta(days=183):
                 continue
             enrich_requirements(obj)
+            add_short_residency(obj)
             dl = parse_date_loose(obj.deadline)
 
             # 「不解析附件」版本：同樣的規則、但不看附件文字（對應網站上的開關）
@@ -74,6 +108,7 @@ def main():
             plain.attachment_text, plain.attachment_names, plain.needs_manual_check = "", "", False
             analyze_requirements(plain)
             enrich_requirements(plain)
+            add_short_residency(plain)
 
             items.append({
                 "idx": idx,
