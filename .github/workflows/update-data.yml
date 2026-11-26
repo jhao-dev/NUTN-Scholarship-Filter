@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   update:
@@ -18,14 +19,60 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install requests beautifulsoup4 pypdf
+      - name: Test rules
+        run: python -m unittest discover tests
       - name: Scrape NUTN announcements
+        id: nutn
         run: python scraper/scrape.py app.py data/scholarships.json
       - name: Fetch external resources
+        id: external
         continue-on-error: true   # 外部來源失敗不影響南大資料更新
         run: python scraper/external.py data/external.json
+      # 要在提交前比較：HEAD 是上一次的資料，工作目錄是這次抓的
+      - name: Find new matching announcements
+        id: find
+        continue-on-error: true
+        env:
+          NUTN_PROFILE: ${{ secrets.NUTN_PROFILE }}
+        run: |
+          old="$(mktemp -d)"
+          for f in scholarships.json external.json; do git show "HEAD:data/$f" > "$old/$f" || rm -f "$old/$f"; done
+          python scraper/notify.py "$old" data > "$RUNNER_TEMP/new.md"
       - name: Commit updated data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/scholarships.json data/external.json
           git diff --cached --quiet || (git commit -m "chore: 更新獎助學金資料" && git push)
+      # 有新的可能符合公告就開一則 issue 指派給專案擁有者（GitHub 會寄信）
+      - name: Notify new announcements
+        id: notify
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          if [ ! -s "$RUNNER_TEMP/new.md" ]; then echo "沒有需要通知的新公告"; exit 0; fi
+          gh issue create --title "新公告通知 $(TZ=Asia/Taipei date +%F)" --body-file "$RUNNER_TEMP/new.md" --assignee "$OWNER"
+      # 有任何問題就開一則 issue 指派給專案擁有者（GitHub 會寄信通知）；已有未關閉的就改成留言
+      - name: Alert on problems
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUTN_OUTCOME: ${{ steps.nutn.outcome }}
+          EXTERNAL_OUTCOME: ${{ steps.external.outcome }}
+          JOB_STATUS: ${{ job.status }}
+          FIND_OUTCOME: ${{ steps.find.outcome }}
+          NOTIFY_OUTCOME: ${{ steps.notify.outcome }}
+          OWNER: ${{ github.repository_owner }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          problems="$(python scraper/health.py)"
+          if [ "$JOB_STATUS" != "success" ] && [ -z "$problems" ]; then problems="- 排程中有步驟失敗"; fi
+          if [ "$FIND_OUTCOME" = "failure" ] || [ "$NOTIFY_OUTCOME" = "failure" ]; then problems="$problems"$'\n'"- 新公告通知沒有成功（請檢查 NUTN_PROFILE 設定）"; fi
+          if [ -z "$problems" ]; then echo "一切正常"; exit 0; fi
+          title="自動更新失敗提醒"
+          body="$(printf '%s\n\n執行紀錄：%s' "$problems" "$RUN_URL")"
+          num="$(gh issue list --state open --search "$title in:title" --json number,title -q ".[] | select(.title==\"$title\") | .number" | head -1)"
+          if [ -n "$num" ]; then gh issue comment "$num" --body "$body"
+          else gh issue create --title "$title" --body "$body" --assignee "$OWNER"; fi
