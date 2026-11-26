@@ -20,9 +20,12 @@ jobs:
       - run: pip install requests beautifulsoup4 pypdf
       - name: Scrape NUTN announcements
         run: python scraper/scrape.py app.py data/scholarships.json
+      - name: Fetch external resources
+        continue-on-error: true   # 外部來源失敗不影響南大資料更新
+        run: python scraper/external.py data/external.json
       - name: Commit updated data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/scholarships.json
+          git add data/scholarships.json data/external.json
           git diff --cached --quiet || (git commit -m "chore: 更新獎助學金資料" && git push)
