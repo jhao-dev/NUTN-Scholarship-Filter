@@ -4,13 +4,37 @@ on:
   schedule:
     - cron: "0 17 * * *"   # 每天台北時間 01:00；網站在 04:00 來取最新資料
   workflow_dispatch:        # 也可以在 GitHub 網頁上手動執行
+    inputs:
+      test_notify:
+        description: "只寄一封測試通知（不更新資料）"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
   issues: write
 
 jobs:
+  test-notify:
+    if: ${{ inputs.test_notify }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Send test notification
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OWNER: ${{ github.repository_owner }}
+          NUTN_PROFILE: ${{ secrets.NUTN_PROFILE }}
+        run: |
+          status="$(python scraper/notify.py --check)"
+          body="$(printf '這是一封測試通知。收到信代表通知寄得到你這裡，看完可以直接關閉。\n\n%s' "$status")"
+          gh issue create --title "通知測試 $(TZ=Asia/Taipei date '+%F %H:%M')" --body "$body" --assignee "$OWNER"
+
   update:
+    if: ${{ !inputs.test_notify }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

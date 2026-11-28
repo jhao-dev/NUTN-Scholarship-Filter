@@ -1,6 +1,7 @@
 """找出「這次才出現、而且你可能符合」的公告，印出通知內容（沒有輸出代表不用通知）。
 
 用法：python scraper/notify.py 舊資料夾 新資料夾
+      python scraper/notify.py --check   （只回報 NUTN_PROFILE 有沒有設好，給測試信使用）
 條件放在環境變數 NUTN_PROFILE（GitHub 的私密設定），格式：
   {"city":"新竹市","dept":"資訊工程學系","gpa":80,"conduct":85,"low":false,"ind":false,"unsure":true}
 通知內容會出現在公開的 issue，所以只列公告名稱與連結，不寫任何個人條件或不符合原因。
@@ -101,16 +102,35 @@ def build(old_dir, new_dir, profile, ns, today):
     return "\n".join(lines)
 
 
-def main():
-    raw = os.environ.get("NUTN_PROFILE", "").strip()
-    if not raw:
-        print("尚未設定 NUTN_PROFILE，略過通知", file=sys.stderr)
-        return
+def parse_profile(raw):
+    """格式不對回傳 None（不印出內容，避免個人條件出現在公開紀錄）。"""
     try:
         profile = json.loads(raw)
         float(profile["gpa"]), float(profile["conduct"]), profile["city"]
     except (ValueError, KeyError, TypeError):
-        sys.exit("NUTN_PROFILE 格式不正確（需要 city、gpa、conduct）")  # 不印出內容
+        return None
+    return profile
+
+
+def profile_status(raw):
+    if not raw.strip():
+        return "尚未設定 NUTN_PROFILE：新公告通知還不會寄出。"
+    if parse_profile(raw) is None:
+        return "NUTN_PROFILE 格式不正確（需要 city、gpa、conduct）：新公告通知會失敗。"
+    return "NUTN_PROFILE 已設定且格式正確：有新的可能符合公告時會寄通知。"
+
+
+def main():
+    raw = os.environ.get("NUTN_PROFILE", "").strip()
+    if sys.argv[1:] == ["--check"]:
+        print(profile_status(raw))
+        return
+    if not raw:
+        print("尚未設定 NUTN_PROFILE，略過通知", file=sys.stderr)
+        return
+    profile = parse_profile(raw)
+    if profile is None:
+        sys.exit("NUTN_PROFILE 格式不正確（需要 city、gpa、conduct）")
     body = build(sys.argv[1], sys.argv[2], profile, load_rules(), datetime.now(TW).strftime("%Y-%m-%d"))
     if body:
         print(body)
