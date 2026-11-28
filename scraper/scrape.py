@@ -52,6 +52,7 @@ DETAIL_MAX, ATT_MAX = 8000, 15000
 NOTICE_TITLE = [
     r"結果通知", r"查核結果", r"說明會", r"快訊", r"今日截止", r"已截止", r"截止通知",
     r"就學貸款", r"重要通知$", r"停止(?:受理|申請)", r"取消(?:申請|受理)",
+    r"漏洞預警", r"資安(?:通報|警訊|預警)",  # 資訊安全通報，不是獎助學金
 ]
 
 
@@ -80,6 +81,65 @@ def add_short_residency(obj):
         obj.residency_requirement = "、".join(found)
 
 
+# app.py 的截止日偵測看不懂「9/29 中午截止」「9月30日(三)前」「(11/2~12/21)」等寫法，這裡補上
+_DATE = r"(?:(?<!\d)(\d{3})\s*[年/.])?\s*(?<![\d-])(\d{1,2})\s*[月/]\s*(\d{1,2})(?!\d)\s*日?"
+_WEEKDAY = r"(?:\s*[(（][^)）]{1,5}[)）])?"
+_TIME = r"(?:\s*(?:上午|中午|下午|晚上)?\s*(?:\d{1,2}\s*(?:[:：]\s*\d{2}|[點時](?:\s*\d{1,2}分)?))?)"
+_RANGE = rf"{_DATE}{_WEEKDAY}{_TIME}\s*(?:至|到|~|～|–|—|-)\s*{_DATE}"
+_UNTIL = rf"{_DATE}{_WEEKDAY}{_TIME}\s*(?:以前|之前|前|止|截止)"
+_PERIOD = r"(?:申請|收件|受理)(?:時間|期間|期限|日期)[^：:\n]{0,8}[：:]\s*"
+
+
+def _to_date(year, month, day, posted):
+    try:
+        if year:
+            return datetime(int(year) + 1911, int(month), int(day))
+        found = datetime(posted.year, int(month), int(day))
+        if found < posted - timedelta(days=60):  # 沒寫年份且早於公告日很多：指的是隔年
+            found = found.replace(year=posted.year + 1)
+        return found
+    except ValueError:
+        return None
+
+
+def find_deadline(title, detail, posted):
+    """先看標題，再看內文的「申請期間：」；都沒有回傳 None（改用 app.py 的結果）。多個日期取最晚的。"""
+    found = []
+    for m in re.finditer(_RANGE, title):
+        found.append(_to_date(m[4] or m[1], m[5], m[6], posted))
+    for m in re.finditer(_UNTIL, title):
+        found.append(_to_date(m[1], m[2], m[3], posted))
+    if not any(found):
+        for m in re.finditer(_PERIOD + _RANGE, detail[:3000]):
+            found.append(_to_date(m[4] or m[1], m[5], m[6], posted))
+        for m in re.finditer(_PERIOD + _UNTIL, detail[:3000]):
+            found.append(_to_date(m[1], m[2], m[3], posted))
+    return max((d for d in found if d), default=None)
+
+
+def find_request_deadline(detail, posted):
+    """最後一招（app.py 也找不到時才用）：內文的「請於…前」，多個日期取最晚的。"""
+    found = [_to_date(m[1], m[2], m[3], posted) for m in re.finditer(r"請於\s*" + _UNTIL, detail[:3000])]
+    return max((d for d in found if d), default=None)
+
+
+def title_key(title):
+    """比對重複公告用：去掉【標籤】、(再次公告)、符號與空白。"""
+    t = re.sub(r"【[^】]*】|[(（][^)）]*(?:再次公告|重新公告|修正)[^)）]*[)）]", "", title or "")
+    return re.sub(r"[\W_]+", "", t)
+
+
+def drop_duplicates(items):
+    """標題相同且截止日相同視為重複公告，只留列表中最前面（最新）的一則。"""
+    seen, out = set(), []
+    for it in items:
+        key = (title_key(it["title"]), it["deadline_iso"])
+        if key not in seen:
+            seen.add(key)
+            out.append(it)
+    return out
+
+
 def pick(obj):
     return {k: getattr(obj, k) for k in FIELDS}
 
@@ -99,9 +159,14 @@ def main():
             posted = parse_posted_date(obj.posted_date)
             if posted and posted < now - timedelta(days=183):
                 continue
+            found = find_deadline(obj.title, obj.detail, posted or now)
+            if not found and not parse_date_loose(obj.deadline):
+                found = find_request_deadline(obj.detail, posted or now)
+            if found:
+                obj.deadline = f"{found.year}年{found.month}月{found.day}日"
             enrich_requirements(obj)
             add_short_residency(obj)
-            dl = parse_date_loose(obj.deadline)
+            dl = found or parse_date_loose(obj.deadline)
 
             # 「不解析附件」版本：同樣的規則、但不看附件文字（對應網站上的開關）
             plain = copy.deepcopy(obj)
@@ -129,6 +194,7 @@ def main():
             errors.append(f"{label}: {e}")
         time.sleep(0.12)
 
+    items = drop_duplicates(items)
     data = {
         "updatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "total": len(listing),

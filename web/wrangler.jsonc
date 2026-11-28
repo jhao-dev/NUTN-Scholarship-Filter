@@ -1,0 +1,12 @@
+{
+  "name": "nutn-scholarship-filter",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "triggers": { "crons": ["0 20 * * *"] },
+  "kv_namespaces": [{ "binding": "KV", "id": "52720d0de9f0434889e559ced71b521d" }]
+}

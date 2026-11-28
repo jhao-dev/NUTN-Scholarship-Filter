@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>南大獎助學金篩選器</title>
+<meta name="description" content="自動分析國立臺南大學獎助學金公告，依戶籍、科系、身分、清寒、學業與操行條件篩選。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBF5EC;--surface:#FFFDF9;--ink:#2A1F17;--sub:#76665A;--line:#EADFD0;
+  --accent:#C2570A;--accent-hover:#A84A06;--on-accent:#fff;--accent-soft:#FDEBD6;
+  --ok:#2F6B3F;--ok-bg:#E6F2E8;--warn:#9A5A07;--warn-bg:#FFEFD0;--bad:#A3321F;--bad-bg:#FBE4DF;
+  --shadow:0 10px 30px rgba(120,70,20,.08);
+  --serif:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --sans:"Noto Sans TC",-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#17110D;--surface:#221A14;--ink:#F6EBDD;--sub:#B9A794;--line:#3A2D23;
+  --accent:#F59E42;--accent-hover:#FFB566;--on-accent:#2A1608;--accent-soft:#3A2412;
+  --ok:#8FD19E;--ok-bg:#1F3324;--warn:#F2C26B;--warn-bg:#3A2C12;--bad:#F29A8B;--bad-bg:#3C1E19;
+  --shadow:0 10px 30px rgba(0,0,0,.35);color-scheme:dark;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#17110D;--surface:#221A14;--ink:#F6EBDD;--sub:#B9A794;--line:#3A2D23;
+    --accent:#F59E42;--accent-hover:#FFB566;--on-accent:#2A1608;--accent-soft:#3A2412;
+    --ok:#8FD19E;--ok-bg:#1F3324;--warn:#F2C26B;--warn-bg:#3A2C12;--bad:#F29A8B;--bad-bg:#3C1E19;
+    --shadow:0 10px 30px rgba(0,0,0,.35);color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.7 var(--sans);-webkit-font-smoothing:antialiased;transition:background .25s,color .25s}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 72px}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* 按鈕（全部膠囊型） */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 26px;border:1.5px solid transparent;border-radius:999px;font:700 16px/1 var(--sans);cursor:pointer;text-decoration:none;transition:transform .15s,background .15s,box-shadow .15s,border-color .15s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);color:var(--on-accent);box-shadow:0 8px 20px color-mix(in srgb,var(--accent) 35%,transparent)}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-primary[disabled]{opacity:.6;cursor:progress}
+.btn-ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm{min-height:38px;padding:0 18px;font-size:14px}
+
+/* 頂欄 */
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:22px 0;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px;font-weight:700}
+.mark{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:var(--accent);color:var(--on-accent);font:900 18px var(--serif)}
+.brand small{display:block;font-weight:400;font-size:12px;color:var(--sub);line-height:1.2}
+.head-r{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--sub)}
+@media(max-width:640px){.src{display:none}}
+#theme{min-height:40px;padding:0 16px;font-size:14px;white-space:nowrap;flex:none}
+.brand{min-width:0}.brand small{white-space:nowrap}
+@media(max-width:480px){.pills li{padding:6px 12px;font-size:12.5px}header{padding:16px 0}}
+
+/* Hero */
+.hero{text-align:center;padding:72px 0 40px}
+.eyebrow{font-size:12px;letter-spacing:.22em;font-weight:700;color:var(--accent)}
+h1{font:900 clamp(34px,7.5vw,60px)/1.2 var(--serif);margin:14px 0 18px;letter-spacing:.02em}
+h1 em{font-style:normal;background:linear-gradient(transparent 62%,var(--accent-soft) 62%)}
+.lead{max-width:560px;margin:0 auto 24px;color:var(--sub)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:0;margin:0;list-style:none}
+.pills li{padding:7px 16px;border:1px solid var(--line);background:var(--surface);border-radius:999px;font-size:13px}
+.pills li::before{content:"✓ ";color:var(--accent);font-weight:700}
+
+h2{font:900 clamp(26px,4.5vw,34px)/1.3 var(--serif);margin:0 0 6px}
+.section-sub{color:var(--sub);margin:0 0 22px}
+section{margin-top:56px}
+
+/* 表單 */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:32px;padding:clamp(20px,4vw,36px);box-shadow:var(--shadow)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px 20px}
+@media(max-width:620px){.grid2{grid-template-columns:1fr}}
+label.f,.legend{display:block;font-size:13px;font-weight:700;color:var(--sub);margin:0 0 7px 6px}
+.input{width:100%;height:50px;padding:0 20px;border:1.5px solid var(--line);border-radius:999px;background:var(--bg);color:var(--ink);font:500 16px var(--sans);transition:border-color .15s}
+.input:hover{border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}
+select.input{appearance:none;padding-right:46px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M1 1.5l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 20px center}
+.stepper{display:flex;align-items:center;height:50px;border:1.5px solid var(--line);border-radius:999px;background:var(--bg);padding:0 6px 0 4px}
+.stepper:hover{border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}
+.stepper input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:500 16px var(--sans);padding:0 16px;height:100%;-moz-appearance:textfield}
+.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.stepper input:focus-visible{outline:none}
+.stepper:focus-within{outline:3px solid var(--accent);outline-offset:3px}
+.step{width:38px;height:38px;margin-left:4px;border:0;border-radius:50%;background:var(--accent-soft);color:var(--accent);font:700 20px/1 var(--sans);cursor:pointer;display:grid;place-items:center}
+.step:hover{background:var(--accent);color:var(--on-accent)}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+.chip{position:relative;cursor:pointer}
+.chip input{position:absolute;opacity:0;inset:0;width:100%;height:100%;cursor:pointer;margin:0}
+.chip span{display:inline-flex;align-items:center;gap:9px;min-height:46px;padding:0 20px;border:1.5px solid var(--line);border-radius:999px;background:var(--bg);font-weight:500;font-size:15px;transition:all .15s}
+.chip span::before{content:"";width:18px;height:18px;border-radius:50%;border:1.8px solid var(--sub);flex:none;transition:all .15s}
+.chip:hover span{border-color:var(--accent)}
+.chip input:checked+span{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:700}
+.chip input:checked+span::before{background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 6.3l2.2 2.2 4.8-5'/%3E%3C/svg%3E") center/12px no-repeat;border-color:var(--accent)}
+.chip input:focus-visible+span{outline:3px solid var(--accent);outline-offset:3px}
+details.more{margin-top:22px;border:1.5px solid var(--line);border-radius:28px;background:var(--bg)}
+details.more summary{list-style:none;cursor:pointer;min-height:52px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;font-weight:700;border-radius:28px}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary::after{content:"";width:10px;height:10px;border-right:2.5px solid var(--sub);border-bottom:2.5px solid var(--sub);transform:rotate(45deg) translateY(-3px);transition:transform .2s}
+details.more[open] summary::after{transform:rotate(225deg)}
+.more-body{padding:6px 24px 24px;display:grid;gap:20px}
+.seg{display:inline-flex;padding:4px;border:1.5px solid var(--line);border-radius:999px;background:var(--surface)}
+.seg label{position:relative;cursor:pointer}
+.seg input{position:absolute;opacity:0;inset:0;cursor:pointer;margin:0}
+.seg span{display:block;padding:9px 22px;border-radius:999px;font-weight:700;font-size:14px;color:var(--sub);transition:all .15s}
+.seg input:checked+span{background:var(--accent);color:var(--on-accent)}
+.seg input:focus-visible+span{outline:3px solid var(--accent);outline-offset:2px}
+.submit-row{margin-top:26px}
+.submit-row .btn{width:100%;min-height:58px;font-size:18px}
+.hint{display:flex;gap:8px;margin:16px 6px 0;font-size:13px;color:var(--sub)}
+
+/* 狀態訊息 */
+.notice{display:flex;align-items:center;gap:12px;margin:18px 0 0;padding:14px 22px;border-radius:999px;background:var(--accent-soft);color:var(--ink);font-size:14px}
+.notice.err{background:var(--bad-bg);color:var(--bad)}
+.notice .btn{margin-left:auto}
+.spin{width:16px;height:16px;border:2.5px solid var(--accent);border-right-color:transparent;border-radius:50%;animation:sp .8s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* 概覽 */
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.tile{padding:22px 12px;text-align:center;background:var(--surface);border:1px solid var(--line);border-radius:28px}
+.tile b{display:block;font:900 clamp(30px,6vw,44px)/1.1 var(--serif)}
+.tile span{font-size:14px;color:var(--sub);font-weight:500}
+.tile .d{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+
+/* 卡片 */
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+@media(max-width:760px){.cards{grid-template-columns:1fr}}
+.card{display:flex;flex-direction:column;padding:26px;background:var(--surface);border:1px solid var(--line);border-radius:30px;box-shadow:var(--shadow)}
+.card-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.badge{display:inline-flex;align-items:center;white-space:nowrap;padding:5px 14px;border-radius:999px;font-size:13px;font-weight:700}
+.b-ok{background:var(--ok-bg);color:var(--ok)}.b-maybe{background:var(--warn-bg);color:var(--warn)}.b-no{background:var(--bad-bg);color:var(--bad)}
+.score{font:900 30px/1 var(--serif)}.score small{font:500 12px var(--sans);color:var(--sub);margin-left:3px}
+.amount{font:900 28px/1.2 var(--serif);margin:18px 0 4px}
+.amount.na{font-size:18px;color:var(--sub);font-weight:600}
+.card h3{font:700 17px/1.5 var(--sans);margin:6px 0 14px}
+.card h3 a{text-decoration:none}.card h3 a:hover{color:var(--accent)}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:14px;color:var(--sub)}
+.dot{width:3px;height:3px;border-radius:50%;background:var(--sub)}
+.lv{padding:2px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--accent-soft);color:var(--accent)}
+.tags{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 0}
+.tag{padding:4px 12px;border-radius:999px;background:var(--bg);border:1px solid var(--line);font-size:13px}
+.tag.neg{background:var(--bad-bg);border-color:transparent;color:var(--bad)}
+.tag.q{background:var(--warn-bg);border-color:transparent;color:var(--warn)}
+.atts{margin:12px 0 0;padding:0;list-style:none;font-size:13px}
+.atts a{color:var(--accent);text-decoration:none}.atts a:hover{text-decoration:underline}
+.card-foot{margin-top:auto;padding-top:20px}
+.empty{padding:40px;text-align:center;background:var(--surface);border:1px dashed var(--line);border-radius:30px;color:var(--sub)}
+
+/* 表格 */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:28px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:780px;font-size:14px}
+th{position:sticky;top:0;text-align:left;font-size:13px;color:var(--sub);padding:14px 16px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td a{text-decoration:none}td a:hover{color:var(--accent)}
+
+
+/* 完整條件表與詳細資料 */
+.th{all:unset;cursor:pointer;font:700 13px var(--sans);color:var(--sub);white-space:nowrap;padding:2px 0}
+.th:hover{color:var(--accent)}.th:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:6px}
+.bar{width:64px;height:7px;border-radius:99px;background:var(--line);margin-bottom:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+td{max-width:260px}td:nth-child(14){min-width:200px}
+.dtl{background:var(--surface);border:1px solid var(--line);border-radius:24px;margin-top:12px}
+.dtl summary{cursor:pointer;list-style:none;padding:16px 24px;font-weight:700;border-radius:24px}
+.dtl summary::-webkit-details-marker{display:none}
+.dtl summary::after{content:"＋";float:right;color:var(--accent)}.dtl[open] summary::after{content:"－"}
+.dtl-body{padding:0 24px 24px}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.dcell{padding:12px 16px;border:1px solid var(--line);border-radius:20px;background:var(--bg)}
+.dl{font-size:12px;color:var(--sub);font-weight:700}.dv{font-size:14px;word-break:break-word}
+.note-box{margin:14px 0;padding:14px 20px;border-radius:20px;background:var(--accent-soft);font-size:14px}
+textarea{width:100%;padding:14px 18px;border:1.5px solid var(--line);border-radius:20px;background:var(--bg);color:var(--ink);font:400 13px/1.6 var(--sans);resize:vertical}
+footer{margin-top:64px;padding-top:24px;border-top:1px solid var(--line);font-size:13px;color:var(--sub);display:grid;gap:6px}
+footer a{color:var(--accent)}
+[hidden]{display:none!important}
+[hidden]{display:none!important}
+.mode{margin:22px 0 18px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.mode small{color:var(--sub);font-size:14px}
+.web-grp{margin-top:44px}
+.web-grp h3{font:700 22px var(--serif);margin:0 0 6px}
+.web-grp p{color:var(--sub);margin:0 0 16px;font-size:15px}
+.q-box{margin:12px 0 0;padding:12px 16px;border-radius:20px;background:var(--bg);border:1px solid var(--line);font-size:14px;color:var(--sub);word-break:break-all}
+.card-foot.multi{display:flex;flex-wrap:wrap;gap:8px}
+/* 篩選列、收藏與提醒 */
+.filters{display:grid;grid-template-columns:2fr repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.filters .input{padding:0 16px;font-size:14px;height:46px;min-width:0}
+@media(max-width:900px){.filters{grid-template-columns:1fr 1fr}.filters input{grid-column:1/-1}}
+.filters2{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:18px}
+.filters2 .seg{flex-wrap:wrap}.filters2 .seg span{padding:7px 16px}
+.flags{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.flag{padding:3px 12px;border-radius:999px;font-size:12px;font-weight:700}
+.flag.urgent{background:var(--bad-bg);color:var(--bad)}
+.flag.new{background:var(--accent);color:var(--on-accent)}
+.card.urgent{border-color:var(--bad)}
+.card.dim{opacity:.6}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+.btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.report{align-self:center;font-size:13px;color:var(--sub);padding:6px 4px}.report:hover{color:var(--accent)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation-duration:.01ms!important}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="mark" aria-hidden="true">南</span><div>NUTN<small>Scholarship Finder</small></div></div>
+    <div class="head-r"><span class="src">資料來源・國立臺南大學獎助學金公告</span>
+      <button class="btn btn-ghost" id="theme" type="button" aria-label="切換深色／淺色模式"><span id="theme-ico">☾</span><span id="theme-txt">深色</span></button></div>
+  </header>
+
+  <main>
+  <section class="hero" style="margin-top:0">
+    <div class="eyebrow">NUTN SCHOLARSHIP INTELLIGENCE</div>
+    <h1>找到真正適合你的<em>獎學金</em>。</h1>
+    <p class="lead">自動分析南大獎助學金公告，依戶籍、科系、身分、清寒、學業與操行條件篩選，並整理相符度、申請難易度與距離截止日。</p>
+    <ul class="pills"><li>最近半年</li><li>過期自動隱藏</li><li>排除論文與得獎名單</li><li>附件解析</li></ul>
+  </section>
+
+  <section id="form-sec" style="margin-top:32px">
+    <div class="eyebrow">ELIGIBILITY PROFILE</div>
+    <h2>設定你的申請條件</h2>
+    <p class="section-sub">一次填妥條件後再分析，避免輸入過程反覆重新整理。</p>
+
+    <div class="mode">
+      <div class="seg" role="radiogroup" aria-label="搜尋範圍">
+        <label><input type="radio" name="mode" value="nutn" checked><span>南大公告</span></label>
+        <label><input type="radio" name="mode" value="web"><span>全網搜索</span></label>
+      </div>
+      <small id="mode-hint">分析南大官方公告，逐項比對你的資格。</small>
+    </div>
+
+    <form class="panel" id="f" novalidate>
+      <div class="grid2">
+        <div><label class="f" for="city">戶籍地</label><select class="input" id="city"></select></div>
+        <div><label class="f" for="dept">科系關鍵字</label><input class="input" id="dept" type="text" placeholder="例如：資訊工程學系" autocomplete="off" value="資訊工程學系"></div>
+        <div class="nutn-only"><label class="f" for="gpa">學業平均成績</label>
+          <div class="stepper"><input id="gpa" type="number" min="0" max="100" step="0.5" inputmode="decimal"><button type="button" class="step" data-t="gpa" data-d="-1" aria-label="減少學業成績">−</button><button type="button" class="step" data-t="gpa" data-d="1" aria-label="增加學業成績">+</button></div></div>
+        <div class="nutn-only"><label class="f" for="conduct">操行成績</label>
+          <div class="stepper"><input id="conduct" type="number" min="0" max="100" step="0.5" inputmode="decimal"><button type="button" class="step" data-t="conduct" data-d="-1" aria-label="減少操行成績">−</button><button type="button" class="step" data-t="conduct" data-d="1" aria-label="增加操行成績">+</button></div></div>
+      </div>
+
+      <div style="margin-top:22px"><div class="legend" id="lg-quick">快速條件</div>
+        <div class="chips" role="group" aria-labelledby="lg-quick">
+          <label class="chip"><input type="checkbox" id="ind"><span>原住民 / 原住民族身分</span></label>
+          <label class="chip"><input type="checkbox" id="low"><span>具清寒 / 低收等證明</span></label>
+          <label class="chip nutn-only"><input type="checkbox" id="unsure" checked><span>資格不明時保留確認</span></label>
+        </div></div>
+
+      <div id="web-opts" hidden style="margin-top:22px">
+        <div class="grid2">
+          <div><label class="f" for="stage">就學階段</label>
+            <select class="input" id="stage"><option>大學部</option><option>碩士班</option><option>博士班</option><option>專科／五專</option></select></div>
+          <div><label class="f" for="extra">其他關鍵字（選填）</label><input class="input" id="extra" type="text" placeholder="例如：單親、身心障礙、新住民" autocomplete="off"></div>
+        </div>
+        <div style="margin-top:22px"><div class="legend" id="lg-cat">資源類別</div>
+          <div class="chips" role="group" aria-labelledby="lg-cat">
+            <label class="chip"><input type="checkbox" name="cat" value="scholar" checked><span>獎助學金</span></label>
+            <label class="chip"><input type="checkbox" name="cat" value="camp" checked><span>營隊</span></label>
+            <label class="chip"><input type="checkbox" name="cat" value="event" checked><span>活動</span></label>
+            <label class="chip"><input type="checkbox" name="cat" value="contest" checked><span>競賽</span></label>
+          </div></div>
+        <div style="margin-top:22px"><div class="legend" id="lg-src">資源來源</div>
+          <div class="chips" role="group" aria-labelledby="lg-src">
+            <label class="chip"><input type="checkbox" name="src" value="gov" checked><span>政府機關</span></label>
+            <label class="chip"><input type="checkbox" name="src" value="private" checked><span>私人團體／企業</span></label>
+            <label class="chip"><input type="checkbox" name="src" value="ngo" checked><span>公益機關／基金會</span></label>
+          </div></div>
+      </div>
+
+      <details class="more nutn-only"><summary>更多篩選與執行設定</summary>
+        <div class="more-body">
+          <div><label class="f" for="limit">掃描公告數（0 為全部）</label>
+            <div class="stepper" style="max-width:260px"><input id="limit" type="number" min="0" max="500" step="1" inputmode="numeric"><button type="button" class="step" data-t="limit" data-d="-10" aria-label="減少">−</button><button type="button" class="step" data-t="limit" data-d="10" aria-label="增加">+</button></div></div>
+          <div><label class="chip"><input type="checkbox" id="att" checked><span>解析公告附件</span></label></div>
+          <div><div class="legend" id="lg-show">結果顯示</div>
+            <div class="seg" role="radiogroup" aria-labelledby="lg-show">
+              <label><input type="radio" name="show" value="rec" checked><span>推薦結果</span></label>
+              <label><input type="radio" name="show" value="all"><span>全部公告</span></label>
+            </div></div>
+        </div>
+      </details>
+
+      <div class="submit-row"><button class="btn btn-primary" id="go" type="submit">開始分析獎學金</button></div>
+      <div class="hint"><span aria-hidden="true">ⓘ</span><span>「無明確要求」不會造成淘汰；送件前仍請開啟原公告確認完整資格。</span></div>
+      <div id="status" role="status" aria-live="polite"></div>
+    </form>
+  </section>
+
+  <section id="res" hidden>
+    <div class="eyebrow">OVERVIEW</div>
+    <h2>資格概覽</h2>
+    <p class="section-sub">依目前條件完成分類，可能符合的公告仍建議開啟原文確認。</p>
+    <div class="tiles" id="tiles"></div>
+
+    <div style="margin-top:56px">
+      <h2>篩選結果</h2>
+      <p class="section-sub" id="res-sub"></p>
+      <div class="filters">
+        <input class="input" id="cq" type="search" placeholder="搜尋公告，例如：清寒 資工" aria-label="搜尋篩選結果">
+        <select class="input" id="sort" aria-label="排序方式"><option value="rec">推薦順序</option><option value="deadline">截止日最近</option><option value="amount">金額最高</option><option value="new">最新公告</option></select>
+        <select class="input" id="fdays" aria-label="截止期限"><option value="0">不限期限</option><option value="7">7 天內截止</option><option value="14">14 天內截止</option><option value="30">30 天內截止</option></select>
+        <select class="input" id="fway" aria-label="申請方式"><option value="">不限申請方式</option><option value="self">自行申請</option><option value="school">學校收件</option></select>
+        <select class="input" id="famt" aria-label="最低金額"><option value="0">不限金額</option><option value="5000">5,000 以上</option><option value="10000">10,000 以上</option><option value="30000">30,000 以上</option></select>
+      </div>
+      <div class="filters2">
+        <div class="seg" role="radiogroup" aria-label="追蹤清單">
+          <label><input type="radio" name="mark" value="" checked><span>全部</span></label>
+          <label><input type="radio" name="mark" value="fav"><span>收藏</span></label>
+          <label><input type="radio" name="mark" value="done"><span>已申請</span></label>
+          <label><input type="radio" name="mark" value="no"><span>不適用</span></label>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="share" type="button" title="連結內含你填的條件">複製分享連結</button>
+      </div>
+      <div class="cards" id="cards"></div>
+    </div>
+
+    <div style="margin-top:56px">
+      <h2>完整條件比較</h2>
+      <p class="section-sub">可搜尋、點欄位標題排序，也能匯出成 CSV。</p>
+      <div class="toolbar">
+        <input class="input" id="q" type="search" placeholder="搜尋公告或條件…" aria-label="搜尋完整條件表" style="max-width:340px">
+        <button class="btn btn-ghost btn-sm" id="csv" type="button">匯出目前結果 CSV</button>
+      </div>
+      <div class="tbl" id="tbl"></div>
+    </div>
+
+    <div style="margin-top:56px">
+      <h2>公告詳細資料</h2>
+      <p class="section-sub">展開卡片查看條件摘要、判斷理由與附件擷取內容。</p>
+      <div id="dtls"></div>
+      <div id="errs"></div>
+    </div>
+  </section>
+  <section id="web" hidden>
+    <div class="eyebrow">WEB SEARCH</div>
+    <h2>全網搜索結果</h2>
+    <p class="section-sub">上半部是本站已整合的資源，下半部是依你的條件組好的 Google 搜尋。</p>
+    <p class="section-sub" id="web-sub"></p>
+    <div id="ext"></div>
+    <h2 style="margin-top:56px">更多搜尋（Google）</h2>
+    <div id="web-body"></div>
+    <div class="hint" style="margin-top:28px"><span aria-hidden="true">ⓘ</span><span>這些是依你的條件組好的 Google 搜尋，結果由 Google 提供，本站不保證內容正確。申請前請務必回到主辦單位官網確認資格與期限。</span></div>
+  </section>
+  </main>
+
+  <footer>
+    <div id="upd">正在連線取得公告資料…</div>
+    <div>資料來自 <a href="https://campus.nutn.edu.tw/newsPost3/default.aspx?board=18" target="_blank" rel="noopener">國立臺南大學最新消息公佈欄・獎助學金版</a>，每日自動更新。本站為非官方整理，內容以學校公告原文為準。</div>
+  </footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const CITIES=["新竹市","新竹縣","臺北市","新北市","桃園市","臺中市","臺南市","高雄市","基隆市","嘉義市","苗栗縣","彰化縣","南投縣","雲林縣","嘉義縣","屏東縣","宜蘭縣","花蓮縣","臺東縣","澎湖縣","金門縣","連江縣"];
+const DAY=864e5, UNK="未偵測";
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store={get(k){try{return localStorage.getItem(k)}catch{return null}},set(k,v){try{localStorage.setItem(k,v)}catch{}}};
+
+/* ───── 主題 ───── */
+const isDark=()=>document.documentElement.getAttribute("data-theme")==="dark"||(!document.documentElement.getAttribute("data-theme")&&matchMedia("(prefers-color-scheme:dark)").matches);
+function applyTheme(t){
+  if(t) document.documentElement.setAttribute("data-theme",t); else document.documentElement.removeAttribute("data-theme");
+  $("theme-ico").textContent=isDark()?"☀":"☾"; $("theme-txt").textContent=isDark()?"淺色":"深色";
+}
+applyTheme(store.get("theme"));
+$("theme").onclick=()=>{const n=isDark()?"light":"dark";store.set("theme",n);applyTheme(n)};
+
+/* ───── 表單 ───── */
+$("city").innerHTML=CITIES.map(c=>`<option>${c}</option>`).join("");
+const DEF={city:"新竹市",dept:"資訊工程學系",gpa:"80",conduct:"85",ind:false,low:false,unsure:true,limit:"0",att:true,show:"rec"};
+let prof={...DEF};
+try{Object.assign(prof,JSON.parse(store.get("profile2")||"{}"))}catch{}
+function fillForm(){
+  $("city").value=CITIES.includes(prof.city)?prof.city:DEF.city;$("dept").value=prof.dept;$("gpa").value=prof.gpa;$("conduct").value=prof.conduct;
+  $("ind").checked=!!prof.ind;$("low").checked=!!prof.low;$("unsure").checked=!!prof.unsure;$("limit").value=prof.limit;$("att").checked=!!prof.att;
+  document.querySelector(`input[name=show][value=${prof.show==="all"?"all":"rec"}]`).checked=true;
+  if(prof.stage) $("stage").value=prof.stage;
+  $("extra").value=prof.extra||"";
+  if(prof.cats) document.querySelectorAll("input[name=cat]").forEach(i=>i.checked=prof.cats.includes(i.value));
+  if(prof.srcs) document.querySelectorAll("input[name=src]").forEach(i=>i.checked=prof.srcs.includes(i.value));
+}
+fillForm();
+if(store.get("mode")==="web") document.querySelector("input[name=mode][value=web]").checked=true;
+document.querySelectorAll(".step").forEach(b=>b.onclick=()=>{
+  const i=$(b.dataset.t),max=+i.max||1e6;
+  i.value=Math.max(0,Math.min(max,(+i.value||0)+ +b.dataset.d));
+});
+function readForm(){
+  const n=(id,def)=>{const v=parseFloat($(id).value);return Number.isFinite(v)?v:def};
+  return {city:$("city").value,dept:$("dept").value.trim(),gpa:Math.min(100,Math.max(0,n("gpa",0))),conduct:Math.min(100,Math.max(0,n("conduct",0))),
+    ind:$("ind").checked,low:$("low").checked,unsure:$("unsure").checked,
+    limit:Math.min(500,Math.max(0,Math.floor(n("limit",0)))),att:$("att").checked,show:document.querySelector("input[name=show]:checked").value,
+    stage:$("stage").value,extra:$("extra").value.trim(),
+    cats:[...document.querySelectorAll("input[name=cat]:checked")].map(i=>i.value),
+    srcs:[...document.querySelectorAll("input[name=src]:checked")].map(i=>i.value)};
+}
+
+/* ───── 資料 ───── */
+let DATA=null,LOADING=null;
+function load(){
+  if(LOADING) return LOADING;
+  $("upd").textContent="正在取得最新公告資料…";
+  LOADING=fetch("/api/data").then(async r=>{
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.error||("HTTP "+r.status));
+    DATA=j;
+    const t=new Date(j.updatedAt).toLocaleString("zh-TW",{timeZone:"Asia/Taipei",hour12:false,dateStyle:"medium",timeStyle:"short"});
+    const stale=Date.now()-Date.parse(j.updatedAt)>48*3600e3;
+    $("upd").textContent=`公告資料更新於 ${t}（台北時間）`+(stale?"　⚠️ 資料超過兩天沒有更新，請以學校公告原文為準。":"");
+    return j;
+  }).catch(e=>{$("upd").textContent="公告資料載入失敗";throw e}).finally(()=>{LOADING=null});
+  return LOADING;
+}
+load().catch(()=>{});
+
+/* ───── 全網搜索（依條件產生搜尋連結） ───── */
+const CATS={
+  scholar:{name:"獎助學金",desc:"各縣市政府、教育部、基金會與公益團體的獎學金與助學金。",kw:"(獎學金 OR 助學金 OR 獎助學金) 申請"},
+  camp:{name:"營隊",desc:"大專生可報名的研習營、培訓營、國際交流營。",kw:"(營隊 OR 研習營 OR 培訓營) 報名"},
+  event:{name:"活動",desc:"工作坊、講座、志工與交流活動。",kw:"(活動 OR 工作坊 OR 志工 OR 徵件) 報名"},
+  contest:{name:"競賽",desc:"黑客松、創意、論文與專題等競賽。",kw:"(競賽 OR 比賽 OR 黑客松 OR 徵選) 報名"},
+};
+const SRCS={
+  gov:{name:"政府機關",q:"(site:gov.tw OR site:edu.tw)"},
+  private:{name:"私人團體／企業",q:"(企業 OR 公司 OR 協會 OR 文教基金會)"},
+  ngo:{name:"公益機關／基金會",q:"(公益 OR 慈善 OR 基金會 OR 扶輪社 OR 獅子會)"},
+};
+function schoolYear(){const t=new Date(Date.now()+8*3600e3),y=t.getUTCFullYear()-1911;return t.getUTCMonth()+1>=8?y:y-1}
+function webTerms(p){
+  const dept=(p.dept||"").replace(/學系|系所|系$/g,"").trim();
+  const t=[];
+  if(p.stage) t.push(p.stage==="專科／五專"?"專科":p.stage==="大學部"?"大專":p.stage);
+  if(p.city) t.push(p.city);
+  if(dept) t.push(dept);
+  if(p.low) t.push("(清寒 OR 低收入 OR 弱勢)");
+  if(p.ind) t.push("原住民");
+  if(p.extra) t.push(p.extra);
+  return t;
+}
+function webCard(cat,src,p){
+  const sy=schoolYear();
+  const q=[`(${sy}學年度 OR ${sy+1}學年度)`,CATS[cat].kw,SRCS[src].q,...webTerms(p)].join(" ");
+  const g="https://www.google.com/search?q="+encodeURIComponent(q);
+  return `<article class="card">
+    <div class="card-top"><span class="badge b-maybe">${esc(SRCS[src].name)}</span></div>
+    <h3>${esc(CATS[cat].name)}・${esc(SRCS[src].name)}</h3>
+    <div class="q-box">${esc(q)}</div>
+    <div class="card-foot multi">
+      <a class="btn btn-primary btn-sm" href="${esc(g)}" target="_blank" rel="noopener noreferrer">Google 搜尋 ↗</a>
+      <a class="btn btn-ghost btn-sm" href="${esc(g+"&tbs=qdr:m")}" target="_blank" rel="noopener noreferrer">只看近一個月 ↗</a>
+    </div>
+  </article>`;
+}
+function renderWeb(p){
+  const cats=p.cats.length?p.cats:Object.keys(CATS),srcs=p.srcs.length?p.srcs:Object.keys(SRCS);
+  const terms=webTerms(p);
+  $("web-sub").textContent=`依你的條件（${terms.join("、").replace(/[()]/g,"")||"無額外條件"}）組合出 ${cats.length*srcs.length} 組搜尋，點開即可看到最新結果。`;
+  $("web-body").innerHTML=cats.map(c=>`<div class="web-grp"><h3>${esc(CATS[c].name)}</h3><p>${esc(CATS[c].desc)}</p>
+    <div class="cards">${srcs.map(s=>webCard(c,s,p)).join("")}</div></div>`).join("");
+  $("web").hidden=false;
+}
+/* ───── 站內整合的外部資源 ───── */
+let EXT=null;
+async function loadExt(){
+  if(EXT) return EXT;
+  const r=await fetch("/api/external"),j=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j.error||("HTTP "+r.status));
+  return EXT=j;
+}
+const tw=x=>String(x||"").replaceAll("台","臺");
+const STAGE_RE={"大學部":/大專|大學/,"碩士班":/研究所|碩士/,"博士班":/研究所|博士/,"專科／五專":/大專|專科|五專/};
+function evalExt(it,p){
+  const fails=[],warns=[];
+  const open=v=>!v||/^(不拘|不限|無)/.test(v);
+  if(!open(it.residency)&&!tw(it.residency).includes(tw(p.city))) fails.push(`戶籍限制：${it.residency}`);
+  if(!open(it.stage)&&!STAGE_RE[p.stage].test(it.stage)) fails.push(`學制限制：${it.stage}`);
+  // 格式例如「智育: 不限　德育(操行): 80　體育: 不限　平均: 80」，各欄只讀自己後面的數字
+  const num=label=>{const m=String(it.grade).match(new RegExp(label+"\\s*[:：]\\s*(\\d{2,3})"));return m?+m[1]:null};
+  for(const [label,name,mine] of [["智育","智育",p.gpa],["平均","學業平均",p.gpa],["德育\\(操行\\)","操行",p.conduct]]){
+    const need=num(label);
+    if(need!=null&&mine<need) fails.push(`${name} ${mine} < 要求 ${need}`);
+  }
+  if(!open(it.identity)){
+    const mine=(p.low&&/低收|清寒|弱勢/.test(it.identity))||(p.ind&&/原住民/.test(it.identity));
+    if(!mine) warns.push(`限特定身分：${it.identity}`);
+  }
+  if(!open(it.qualification)) warns.push(`獎助資格：${it.qualification}`);
+  if(!open(it.discipline)) warns.push(`學門限制：${it.discipline}`);
+  return {match:fails.length?"不符合":warns.length?"可能符合（需確認）":"符合",reason:[...fails,...warns].join("；")||"戶籍、學制、成績、身分欄位沒有擋下你；其他條件請看「限制條件」"};
+}
+const left=iso=>{const d=daysTo(iso);return d===null?"":d===0?"今天截止":`剩餘 ${d} 天`};
+const extLink=(u,t)=>/^https:\/\//.test(u)?`<a class="btn btn-ghost btn-sm" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${t} ↗</a>`:"";
+function schCard(it,e){
+  return `<article class="card">
+    <div class="card-top"><span class="badge ${CLS[e.match]}">${esc(e.match==="符合"?"初步符合":e.match)}</span><span class="tag">${it.source==="gov"?"政府機關":"民間團體"}</span></div>
+    <h3 style="margin-top:16px">${esc(it.title)}</h3>
+    <div class="meta"><span>${esc(it.org)}</span><span class="dot"></span><span>截止 ${esc(it.deadline_iso||"請看原文")}</span><span class="dot"></span><span>${esc(left(it.deadline_iso))}</span></div>
+    <div class="q-box">${esc(e.reason)}</div>
+    ${it.limits?`<details class="dtl"><summary>限制條件</summary><div class="dtl-body" style="white-space:pre-line;font-size:14px">${esc(it.limits)}</div></details>`:""}
+    <div class="card-foot multi">${extLink(it.url,"查看圓夢助學網")}${reportLink(it.title,it.url)}</div>
+  </article>`;
+}
+function actCard(it){
+  return `<article class="card">
+    <div class="card-top"><span class="badge b-maybe">${esc(it.status)}</span><span class="tag">政府機關</span></div>
+    <h3 style="margin-top:16px">${esc(it.title)}</h3>
+    <div class="meta"><span>${esc(it.org)}</span><span class="dot"></span><span>活動日期 ${esc(it.start_iso||"")}～${esc(it.end_iso||"")}</span></div>
+    ${it.tag?`<div class="tags"><span class="tag">${esc(it.tag)}</span></div>`:""}
+    <div class="card-foot multi">${extLink(it.url,"查看活動")}</div>
+  </article>`;
+}
+const CAT_NAME={camp:"營隊",event:"活動",contest:"競賽"};
+async function renderExt(p){
+  const box=$("ext");
+  box.innerHTML='<div class="notice"><span class="spin"></span>正在讀取整合資源…</div>';
+  try{await loadExt()}catch(err){box.innerHTML=`<div class="notice err" role="alert">整合資源暫時讀不到（${esc(err.message)}），仍可使用下方的 Google 搜尋。</div>`;return}
+  const cats=p.cats.length?p.cats:Object.keys(CATS),srcs=p.srcs.length?p.srcs:Object.keys(SRCS);
+  // 圓夢助學網的民間團體清單同時涵蓋企業與公益基金會
+  const srcOk=it=>it.source==="gov"?srcs.includes("gov"):srcs.includes("private")||srcs.includes("ngo");
+  const pool=EXT.items.filter(it=>cats.includes(it.category)&&srcOk(it)&&!(it.deadline_iso&&daysTo(it.deadline_iso)<0)&&!(it.end_iso&&daysTo(it.end_iso)<0));
+  const sch=pool.filter(i=>i.category==="scholar").map(it=>({it,e:evalExt(it,p)}))
+    .sort((a,b)=>ORDER[a.e.match]-ORDER[b.e.match]||String(a.it.deadline_iso).localeCompare(String(b.it.deadline_iso)));
+  const ok=sch.filter(x=>x.e.match!=="不符合"),no=sch.filter(x=>x.e.match==="不符合");
+  let h="";
+  if(cats.includes("scholar")){
+    h+=`<div class="web-grp"><h3>獎助學金</h3><p>${ok.length} 則符合或需確認${no.length?`，另有 ${no.length} 則不符合`:""}。</p>
+      <div class="cards">${ok.map(x=>schCard(x.it,x.e)).join("")||'<div class="empty" style="grid-column:1/-1">目前沒有符合的獎助學金。</div>'}</div>
+      ${no.length?`<details class="dtl"><summary>查看不符合的 ${no.length} 則</summary><div class="dtl-body"><div class="cards">${no.map(x=>schCard(x.it,x.e)).join("")}</div></div></details>`:""}</div>`;
+  }
+  for(const c of ["camp","event","contest"].filter(c=>cats.includes(c))){
+    const list=pool.filter(i=>i.category===c);
+    if(list.length) h+=`<div class="web-grp"><h3>${CAT_NAME[c]}</h3><div class="cards">${list.map(actCard).join("")}</div></div>`;
+  }
+  const t=new Date(EXT.updatedAt).toLocaleDateString("zh-TW",{timeZone:"Asia/Taipei"});
+  box.innerHTML=(h||'<div class="empty">這個類別或來源目前沒有整合資料，請用下方的 Google 搜尋。</div>')
+    +`<p class="section-sub" style="margin-top:18px">整合來源：教育部圓夢助學網、教育部青年發展署（資料更新於 ${t}）。</p>`;
+}
+
+const modeNow=()=>document.querySelector("input[name=mode]:checked").value;
+function applyMode(){
+  const web=modeNow()==="web";
+  document.querySelectorAll(".nutn-only").forEach(e=>e.hidden=web);
+  $("web-opts").hidden=!web;
+  $("res").hidden=true;$("web").hidden=true;
+  $("go").textContent=web?"產生搜尋連結":"開始分析獎學金";
+  $("mode-hint").textContent=web?"依你的資格，到全網搜尋政府、私人團體、公益機關的獎助學金、營隊、活動與競賽。":"分析南大官方公告，逐項比對你的資格。";
+  $("status").innerHTML="";
+}
+document.querySelectorAll("input[name=mode]").forEach(r=>r.onchange=()=>{store.set("mode",modeNow());applyMode()});
+
+/* ───── 判斷邏輯（與 app.py 的 evaluate_match 一致） ───── */
+const todayTW=()=>new Date(Date.now()+8*3600e3).toISOString().slice(0,10);
+const daysTo=iso=>iso?Math.round((Date.parse(iso)-Date.parse(todayTW()))/DAY):null;
+const normPlace=x=>(x||"").replaceAll("台","臺").trim();
+const pyRound=x=>{const r=Math.round(x);return(Math.abs(x%1)===.5&&r%2!==0)?r-1:r};
+const POV_PROOF="需要清寒/弱勢證明",POV_QUAL="有清寒/弱勢資格（證明方式需確認）";
+function majorMatches(um,req){
+  if(req===UNK) return true;
+  const u=um.replaceAll("學系","").replaceAll("系","");
+  if(req.includes("資訊工程")&&(u.includes("資訊工程")||u.includes("資工"))) return true;
+  if(req.includes("資訊相關")&&(u.includes("資訊")||u.includes("資工"))) return true;
+  if(req.includes("電機工程")||req.includes("電子工程")||req.includes("電機電子相關")) return u.includes("電機")||u.includes("電子");
+  return false;
+}
+function evaluate(it,p){
+  const f=p.att?it.with_att:it.no_att;
+  const fails=[],warns=[];let checks=0,passed=0;
+  const check=(ok,msg)=>{checks++;ok?passed++:fails.push(msg)};
+  if(f.academic_min!=null) check(p.gpa>=f.academic_min,`學業 ${p.gpa} < 要求 ${f.academic_min}`);
+  if(f.conduct_min!=null) check(p.conduct>=f.conduct_min,`操行 ${p.conduct} < 要求 ${f.conduct_min}`);
+  if(f.poverty_status===POV_PROOF) check(p.low,"需要清寒/弱勢證明，但你設定為沒有");
+  else if(f.poverty_status===POV_QUAL&&!p.low){ p.unsure?warns.push("有清寒/弱勢資格限制，需再確認"):fails.push("有清寒/弱勢資格限制"); }
+  if(f.residency_requirement!==UNK){
+    const allowed=f.residency_requirement.split("、").map(normPlace);
+    check(allowed.includes(normPlace(p.city)),`戶籍限制為 ${f.residency_requirement}，你的戶籍為 ${p.city}`);
+  }
+  if(f.indigenous_requirement!==UNK) check(p.ind,"限原住民/原住民族身分");
+  if(f.major_requirement!==UNK) check(majorMatches(p.dept,f.major_requirement),`科系限制為 ${f.major_requirement}，你的科系為 ${p.dept}`);
+  if(f.needs_manual_check) warns.push("附件可能無法完整自動讀取");
+  let score=checks===0?100:pyRound(passed/checks*100);
+  if(warns.length) score=Math.max(0,score-Math.min(15,5*warns.length));
+  let match,reason;
+  if(fails.length){match="不符合";reason=fails.join("；")}
+  else if(warns.length){match="可能符合（需確認）";reason=warns.join("；")}
+  else{match="符合";reason="目前偵測到的硬性條件均符合"}
+  return {it,f,match,score,reason,days:daysTo(it.deadline_iso)};
+}
+function analyze(p){
+  const out=[];
+  for(const it of DATA.items){
+    if(p.limit>0&&it.idx>=p.limit) continue;
+    const d=daysTo(it.deadline_iso);
+    if(d!==null&&d<0) continue;                // 已截止不顯示
+    out.push(evaluate(it,p));
+  }
+  return out;
+}
+const ORDER={"符合":0,"可能符合（需確認）":1,"不符合":2};
+const sortShown=rows=>rows.slice().sort((a,b)=>ORDER[a.match]-ORDER[b.match]||b.score-a.score||(a.days??99999)-(b.days??99999));
+const bucket=(v,)=>v==null?"無要求/未偵測":`${+v}+`;
+
+/* ───── 繪製 ───── */
+const CLS={"符合":"b-ok","可能符合（需確認）":"b-maybe","不符合":"b-no"};
+const daysText=r=>r.days!==null?`剩餘 ${r.days} 天`:"剩餘天數未辨識";
+/* 錯誤回報：開一則預填好的 GitHub issue（只帶公告名稱與網址，不帶你的條件） */
+const reportLink=(title,url)=>{
+  const q=new URLSearchParams({title:`資料錯誤：${title}`.slice(0,120),body:`公告網址：${url}\n\n哪裡有錯（例如截止日、金額、戶籍限制）：\n`});
+  return `<a class="report" href="https://github.com/jhao-dev/NUTN-Scholarship-Filter/issues/new?${esc(q.toString())}" target="_blank" rel="noopener noreferrer" title="需要 GitHub 帳號，回報內容是公開的">回報資料錯誤</a>`;
+};
+
+/* 收藏與申請追蹤（只存在這個瀏覽器） */
+let MARKS={};
+try{MARKS=JSON.parse(store.get("marks")||"{}")||{}}catch{}
+const markOf=r=>MARKS[r.it.board_no]||"";
+const postedTime=it=>{const m=String(it.posted_date).match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);return m?Date.UTC(+m[1],m[2]-1,+m[3]):0};
+const isNew=it=>{const t=postedTime(it);return !!t&&Date.parse(todayTW())-t<=7*DAY};
+const isUrgent=r=>r.days!==null&&r.days>=0&&r.days<=7;
+const amountMax=r=>r.f.amount==="金額未辨識"?0:Math.max(0,...(String(r.f.amount).match(/\d[\d,]*/g)||[]).map(x=>+x.replaceAll(",","")));
+
+function card(r){
+  const f=r.f,it=r.it,m=markOf(r),id=esc(it.board_no);
+  let tags=[f.residency_requirement,f.major_requirement,f.poverty_status].filter(t=>t&&t!==UNK&&t!=="未提及").slice(0,3);
+  if(!tags.length) tags=["無明確額外限制"];
+  const unk=f.amount==="金額未辨識";
+  const flags=(isUrgent(r)?`<span class="flag urgent">${r.days===0?"今天截止":`只剩 ${r.days} 天`}</span>`:"")+(isNew(it)?`<span class="flag new">NEW</span>`:"");
+  const mb=(k,t)=>`<button type="button" class="btn btn-ghost btn-sm" data-mark="${k}" data-id="${id}" aria-pressed="${m===k}">${t}</button>`;
+  return `<article class="card ${isUrgent(r)?"urgent":""} ${m==="no"?"dim":""}">
+    <div class="card-top"><span class="badge ${CLS[r.match]}">${esc(r.match)}</span><span class="score">${r.score}<small>% 相符</small></span></div>
+    ${flags?`<div class="flags">${flags}</div>`:""}
+    <div class="amount ${unk?"na":""}">${esc(f.amount)}</div>
+    <h3><a href="${esc(it.url)}" target="_blank" rel="noopener noreferrer">${esc(it.title)}</a></h3>
+    <div class="meta"><span>截止 ${esc(it.deadline)}</span><span class="dot"></span><span>${esc(daysText(r))}</span><span class="dot"></span><span>${esc(f.difficulty)}</span></div>
+    <div class="tags">${tags.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>
+    <div class="card-foot acts">${mb("fav","☆ 收藏")}${mb("done","✓ 已申請")}${mb("no","不適用")}
+      ${it.deadline_iso?`<button type="button" class="btn btn-ghost btn-sm" data-ics="${id}">加入行事曆</button>`:""}
+      <a class="btn btn-ghost btn-sm" href="${esc(it.url)}" target="_blank" rel="noopener noreferrer">查看原公告 ↗</a>
+      ${reportLink(it.title,it.url)}</div>
+  </article>`;
+}
+
+/* 卡片的搜尋、篩選、排序 */
+const SYN=[["清寒","低收","中低收","弱勢"],["原住民","原民"],["資工","資訊工程"],["獎學金","助學金","獎助"]];
+const norm=x=>String(x||"").toLowerCase().replaceAll("台","臺");
+function matchQuery(r,q){
+  const hay=norm([r.it.title,r.it.detail,r.it.attachment_text,r.f.amount,r.f.residency_requirement,r.f.major_requirement,r.f.poverty_status,r.f.other_requirements].join(" "));
+  return norm(q).split(/\s+/).filter(Boolean).every(w=>(SYN.find(g=>g.includes(w))||[w]).some(x=>hay.includes(x)));
+}
+function renderCards(){
+  const q=$("cq").value,sort=$("sort").value,days=+$("fdays").value,way=$("fway").value,amt=+$("famt").value;
+  const mark=document.querySelector("input[name=mark]:checked").value;
+  // 收藏／已申請／不適用清單要看得到「不符合」的公告，所以從全部結果挑
+  let rows=(mark?ALL:VIEW).filter(r=>mark?markOf(r)===mark:markOf(r)!=="no");
+  rows=rows.filter(r=>(!q.trim()||matchQuery(r,q))
+    &&(!days||(r.days!==null&&r.days<=days))
+    &&(!way||(way==="self"?/自行申請/:/學校(收件|送件)/).test(r.it.title))
+    &&(!amt||amountMax(r)>=amt));
+  if(sort==="deadline") rows=rows.slice().sort((a,b)=>(a.days??99999)-(b.days??99999));
+  if(sort==="amount") rows=rows.slice().sort((a,b)=>amountMax(b)-amountMax(a));
+  if(sort==="new") rows=rows.slice().sort((a,b)=>postedTime(b.it)-postedTime(a.it));
+  const urgent=rows.filter(isUrgent).length;
+  $("res-sub").textContent=`目前顯示 ${rows.length} 則公告${urgent?`，其中 ${urgent} 則 7 天內截止`:""}；先用卡片快速掃讀，再到完整表格比較所有條件。`;
+  $("cards").innerHTML=rows.length?rows.map(card).join(""):`<div class="empty" style="grid-column:1/-1">這裡沒有公告。試著清除搜尋或放寬篩選，或改選「全部公告」重新分析。</div>`;
+}
+["cq","sort","fdays","fway","famt"].forEach(i=>$(i).addEventListener("input",renderCards));
+document.querySelectorAll("input[name=mark]").forEach(i=>i.onchange=renderCards);
+
+/* 行事曆檔（.ics）：截止日整天事件，提前 3 天提醒 */
+function icsText(it){
+  const t=x=>String(x).replace(/\\/g,"\\\\").replace(/([,;])/g,"\\$1").replace(/\r?\n/g,"\\n");
+  const d=it.deadline_iso.replaceAll("-","");
+  const next=new Date(Date.parse(it.deadline_iso)+DAY).toISOString().slice(0,10).replaceAll("-","");
+  return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//NUTN Scholarship Finder//ZH","BEGIN:VEVENT",`UID:nutn-${it.board_no}@scholarship`,
+    `DTSTAMP:${new Date().toISOString().replace(/[-:]|\.\d+/g,"")}`,`DTSTART;VALUE=DATE:${d}`,`DTEND;VALUE=DATE:${next}`,
+    `SUMMARY:${t("獎學金截止："+it.title)}`,`DESCRIPTION:${t("請以原公告為準 "+it.url)}`,
+    "BEGIN:VALARM","TRIGGER:-P3D","ACTION:DISPLAY","DESCRIPTION:3 天後截止","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");
+}
+function download(name,text,type){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+$("cards").addEventListener("click",e=>{
+  const mb=e.target.closest("[data-mark]"),ic=e.target.closest("[data-ics]");
+  if(mb){
+    const {id,mark}=mb.dataset;
+    if(MARKS[id]===mark) delete MARKS[id]; else MARKS[id]=mark;
+    store.set("marks",JSON.stringify(MARKS));renderCards();
+  }else if(ic){
+    const r=ALL.find(x=>String(x.it.board_no)===ic.dataset.ics);
+    if(r) download(`獎學金截止_${r.it.deadline_iso}.ics`,icsText(r.it),"text/calendar;charset=utf-8");
+  }
+});
+
+/* 分享連結：條件放在 # 後面，不會傳給伺服器 */
+const SHARE_KEYS=["city","dept","gpa","conduct","ind","low","unsure","limit","att","show"];
+$("share").onclick=async()=>{
+  const p=readForm(),o=Object.fromEntries(SHARE_KEYS.map(k=>[k,p[k]]));
+  const url=location.origin+location.pathname+"#s="+encodeURIComponent(JSON.stringify(o));
+  const b=$("share");
+  try{await navigator.clipboard.writeText(url);b.textContent="已複製（內含你的條件）"}
+  catch{prompt("請手動複製這個連結",url)}
+  setTimeout(()=>{b.textContent="複製分享連結"},2500);
+};
+
+const COLS=[
+  ["符合狀態",r=>r.match],["獎助金額",r=>r.f.amount],["相符度",r=>r.score],["剩餘天數",r=>r.days??"未辨識"],["難易度",r=>r.f.difficulty],
+  ["公告",r=>r.it.title],["截止日",r=>r.it.deadline],["戶籍限制",r=>r.f.residency_requirement],["原住民限制",r=>r.f.indigenous_requirement],
+  ["科系限制",r=>r.f.major_requirement],["清寒/弱勢",r=>r.f.poverty_status],["學業門檻",r=>bucket(r.f.academic_min)],["操行門檻",r=>bucket(r.f.conduct_min)],
+  ["判斷理由",r=>r.reason],["公告日期",r=>r.it.posted_date],["附件",r=>r.it.attachment_names],["網址",r=>r.it.url],
+];
+let VIEW=[],ALL=[],SORT={k:null,asc:true},QUERY="";
+function cellHtml(name,v,r){
+  if(name==="相符度") return `<div class="bar"><i style="width:${v}%"></i></div>${v}%`;
+  if(name==="網址") return `<a href="${esc(v)}" target="_blank" rel="noopener noreferrer">開啟公告</a>`;
+  if(name==="符合狀態") return `<span class="badge ${CLS[v]}">${esc(v)}</span>`;
+  return esc(v);
+}
+function renderTable(){
+  let rows=VIEW.map(r=>({r,v:COLS.map(c=>c[1](r))}));
+  const q=QUERY.trim().toLowerCase();
+  if(q) rows=rows.filter(x=>x.v.join(" ").toLowerCase().includes(q));
+  if(SORT.k!==null){
+    const i=SORT.k;
+    rows.sort((a,b)=>{const x=a.v[i],y=b.v[i];const nx=typeof x==="number",ny=typeof y==="number";
+      const c=nx&&ny?x-y:nx?-1:ny?1:String(x).localeCompare(String(y),"zh-Hant");return SORT.asc?c:-c});
+  }
+  $("tbl").innerHTML=`<table><thead><tr>${COLS.map((c,i)=>`<th><button type="button" class="th" data-i="${i}" aria-label="依${c[0]}排序">${c[0]}${SORT.k===i?(SORT.asc?" ▲":" ▼"):""}</button></th>`).join("")}</tr></thead>
+    <tbody>${rows.map(x=>`<tr>${x.v.map((v,i)=>`<td>${cellHtml(COLS[i][0],v,x.r)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${COLS.length}">沒有符合搜尋的結果</td></tr>`}</tbody></table>`;
+  $("tbl").querySelectorAll(".th").forEach(b=>b.onclick=()=>{const i=+b.dataset.i;SORT=SORT.k===i?{k:i,asc:!SORT.asc}:{k:i,asc:true};renderTable()});
+}
+$("q").addEventListener("input",e=>{QUERY=e.target.value;renderTable()});
+
+function csvText(){
+  const cell=v=>`"${String(v).replaceAll('"','""')}"`;
+  const lines=[COLS.map(c=>cell(c[0])).join(",")];
+  for(const r of VIEW) lines.push(COLS.map(c=>cell(c[0]==="相符度"?r.score+"%":c[1](r))).join(","));
+  return "﻿"+lines.join("\r\n");
+}
+$("csv").onclick=()=>{
+  const t=new Date(Date.now()+8*3600e3).toISOString().replace(/[-:T]/g,"").slice(0,12);
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csvText()],{type:"text/csv;charset=utf-8"}));
+  a.download=`NUTN_獎助學金篩選_${t.slice(0,8)}_${t.slice(8,12)}.csv`;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+
+function detailItem(r,p){
+  const f=r.f,it=r.it;
+  const cells=[["獎助金額",f.amount],["相符度",r.score+"%"],["剩餘天數",r.days??"未辨識"],["申請難易度",f.difficulty],["截止日期",it.deadline],
+    ["戶籍限制",f.residency_requirement],["原住民限制",f.indigenous_requirement],["科系限制",f.major_requirement],["清寒／弱勢",f.poverty_status],
+    ["學業門檻",f.academic_requirement],["操行門檻",f.conduct_requirement],["其他限制",f.other_requirements],["公告日期",it.posted_date||"未辨識"]];
+  return `<details class="dtl"><summary>${esc(r.match)}｜${esc(it.title)}</summary><div class="dtl-body">
+    <div class="dgrid">${cells.map(([k,v])=>`<div class="dcell"><div class="dl">${esc(k)}</div><div class="dv">${esc(v)}</div></div>`).join("")}</div>
+    <div class="note-box"><strong>判斷理由</strong><br>${esc(r.reason)}</div>
+    <p><a class="btn btn-ghost btn-sm" href="${esc(it.url)}" target="_blank" rel="noopener noreferrer">開啟原公告 ↗</a></p>
+    <label class="f">公告內文</label><textarea readonly rows="9">${esc(it.detail)}</textarea>
+    ${p.att&&it.attachment_text?`<label class="f" style="margin-top:12px">附件擷取文字</label><textarea readonly rows="9">${esc(it.attachment_text)}</textarea>`:""}
+  </div></details>`;
+}
+
+function render(p,all){
+  const c={"符合":0,"可能符合（需確認）":0,"不符合":0};all.forEach(r=>c[r.match]++);
+  $("tiles").innerHTML=[["符合","符合","var(--ok)"],["可能符合（需確認）","可能符合","var(--warn)"],["不符合","不符合","var(--bad)"]]
+    .map(([k,t,col])=>`<div class="tile"><b>${c[k]}</b><span><i class="d" style="background:${col}"></i>${t}</span></div>`).join("");
+  const only=p.show!=="all";
+  VIEW=sortShown(only?all.filter(r=>r.match!=="不符合"):all);
+  ALL=sortShown(all);renderCards();
+  SORT={k:null,asc:true};QUERY="";$("q").value="";renderTable();
+  $("dtls").innerHTML=all.filter(r=>!only||r.match!=="不符合").map(r=>detailItem(r,p)).join("");
+  const errs=DATA.errors||[];
+  $("errs").innerHTML=errs.length?`<details class="dtl" style="margin-top:28px"><summary>⚠️ ${errs.length} 則公告抓取失敗</summary><div class="dtl-body"><ul>${errs.map(e=>`<li>${esc(e)}</li>`).join("")}</ul></div></details>`:"";
+  $("res").hidden=false;
+}
+
+$("f").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const p=readForm();prof=p;store.set("profile2",JSON.stringify(p));
+  if(modeNow()==="web"){renderWeb(p);renderExt(p);$("web").scrollIntoView({behavior:"smooth",block:"start"});return}
+  const btn=$("go"),st=$("status");btn.disabled=true;btn.textContent="分析中…";
+  try{
+    if(!DATA){st.innerHTML='<div class="notice"><span class="spin"></span>正在取得南大最新公告…</div>';await load();}
+    st.innerHTML="";
+    render(p,analyze(p));
+    $("res").scrollIntoView({behavior:"smooth",block:"start"});
+  }catch(err){
+    st.innerHTML=`<div class="notice err" role="alert">${esc(err.message||"載入失敗")}<button class="btn btn-ghost btn-sm" type="button" id="retry">重試</button></div>`;
+    $("retry").onclick=()=>$("f").requestSubmit();
+  }finally{btn.disabled=false;btn.textContent="開始分析獎學金";}
+});
+applyMode();
+if(location.hash.startsWith("#s=")){
+  try{
+    const o=JSON.parse(decodeURIComponent(location.hash.slice(3)));
+    SHARE_KEYS.forEach(k=>{if(["string","number","boolean"].includes(typeof o[k])) prof[k]=o[k]});
+    fillForm();document.querySelector("input[name=mode][value=nutn]").checked=true;applyMode();$("f").requestSubmit();
+  }catch{}
+}
+</script>
+</body>
+</html>
