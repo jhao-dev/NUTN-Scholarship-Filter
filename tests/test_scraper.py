@@ -124,6 +124,13 @@ class Notify(unittest.TestCase):
         self.assertNotIn("@", body)
         self.assertNotIn("新竹", body)
 
+    def test_profile_status_hides_values(self):
+        self.assertIn("尚未設定", notify.profile_status(""))
+        self.assertIn("格式不正確", notify.profile_status("{oops"))
+        ok = notify.profile_status(json.dumps(self.PROFILE))
+        self.assertIn("格式正確", ok)
+        self.assertNotIn("新竹", ok)
+
     def test_no_old_data_no_notice(self):
         self.assertEqual(self.build(None, [self.item("1")]), "")
 
