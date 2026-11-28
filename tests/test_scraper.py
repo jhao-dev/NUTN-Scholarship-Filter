@@ -4,6 +4,7 @@ import sys
 import tempfile
 import types
 import unittest
+from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -39,6 +40,44 @@ class Notices(unittest.TestCase):
 
     def test_scholarship_kept(self):
         self.assertFalse(scrape.is_notice_only(obj(title="【自行申請】清寒優秀學生獎學金")))
+
+
+class Deadlines(unittest.TestCase):
+    def check(self, title, expected, detail="", posted=datetime(2026, 9, 1)):
+        got = scrape.find_deadline(title, detail, posted)
+        self.assertEqual(got and got.strftime("%Y-%m-%d"), expected, title or detail)
+
+    def test_title_wording(self):
+        self.check("張榮發基金會清寒學生助學金。(※10/12 中午12點截止)", "2026-10-12")
+        self.check("轉知115-1屏東縣清寒優秀學生獎學金(9/29 中午截止)", "2026-09-29")
+        self.check("有意者請於115年10月27日(二)前繳交申請資料", "2026-10-27")
+        self.check("有意申請者請於9月30日（星期三）前繳交", "2026-09-30")
+        self.check("115-1學產基金助學金，申請至10/6(星期二)截止。", "2026-10-06")
+        self.check("嘉義西區扶輪社第22屆獎學金。(11/2~12/21)", "2026-12-21")
+
+    def test_detail_period(self):
+        self.check("學雜費預先減免開放申請", "2026-12-31", "二、申請期間及路徑： 115年12月1日至12月31日止")
+
+    def test_request_sentence(self):
+        got = scrape.find_request_deadline("自行申請：請於115年10月28日(三)前郵寄。學校送件：請於115年10月19日(一)前", datetime(2026, 10, 1))
+        self.assertEqual(got, datetime(2026, 10, 28))
+
+    def test_next_year(self):
+        self.check("獎學金(1/15截止)", "2027-01-15", posted=datetime(2026, 12, 1))
+
+    def test_no_date(self):
+        self.check("轉知115-1清寒獎學金", None, "低收入戶證明有效期限至12月31日")
+
+
+class Cleanup(unittest.TestCase):
+    def test_security_alert_excluded(self):
+        self.assertTrue(scrape.is_notice_only(obj(title="【漏洞預警】Cisco 高風險安全漏洞")))
+
+    def test_duplicates(self):
+        items = [{"title": "(再次公告)【重要】★學產基金助學金", "deadline_iso": "2026-10-06"},
+                 {"title": "【重要】★學產基金助學金", "deadline_iso": "2026-10-06"},
+                 {"title": "【重要】★學產基金助學金", "deadline_iso": "2027-03-06"}]
+        self.assertEqual(scrape.drop_duplicates(items), [items[0], items[2]])
 
 
 class Dates(unittest.TestCase):
